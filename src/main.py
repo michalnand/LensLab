@@ -2,8 +2,8 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QListWidget,
     QSlider, QPushButton, QGraphicsView, QGraphicsScene, QFileDialog, QListWidgetItem)
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QFont
+from PyQt5.QtCore import Qt, QSize, QEvent, QObject, QCoreApplication
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QFont, QCursor
 import pyqtgraph as pg
 import os
 
@@ -11,11 +11,88 @@ from core import *
 
 from ImageLoader import *
 
+import traceback
+
+
+class ViewDims:
+    def __init__(self): 
+        self.view_width    = 100
+        self.view_height   = 100
+        self.pixmap_width  = 100
+        self.pixmap_height = 100
+
+
+class SceneEventFilter(QObject):
+    def __init__(self, scene, core, view_dims, refresh_func):
+        super().__init__(scene)
+        self.scene      = scene
+        self.core       = core
+        self.view_dims  = view_dims
+        self.refresh_func = refresh_func
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.GraphicsSceneMousePress:
+            if event.button() == Qt.LeftButton:
+                scene_pos = event.scenePos()
+                x, y = self._compute_relative_pos(scene_pos)              
+                self.core.image.set_crop_event(x, y, True)
+                #self.refresh_func()
+
+                QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMousePress)
+                
+            return True
+        elif event.type() == QEvent.GraphicsSceneMouseRelease:
+            if event.button() == Qt.LeftButton:                
+                scene_pos = event.scenePos()
+                x, y = self._compute_relative_pos(scene_pos)  
+
+                QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMouseRelease)            
+
+            return True
+        elif event.type() == QEvent.GraphicsSceneMouseMove:            
+            scene_pos = event.scenePos()
+            x, y = self._compute_relative_pos(scene_pos)              
+            self.core.image.set_crop_event(x, y, False)
+            #self.refresh_func()
+
+            QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMouseMove)
+            
+            return True
+        
+        return super().eventFilter(watched, event)
+
+
+    def _compute_relative_pos(self, scene_pos):
+        center_x = self.view_dims.view_width/2.0
+        center_y = self.view_dims.view_height/2.0
+
+        mouse_x = scene_pos.x()
+        mouse_y = scene_pos.y()
+
+        left_edge  = center_x - self.view_dims.pixmap_width/2.0
+        right_edge = center_x + self.view_dims.pixmap_width/2.0
+
+        top_edge    = center_y - self.view_dims.pixmap_height/2.0
+        bottom_edge = center_y + self.view_dims.pixmap_height/2.0
+
+        x = numpy.clip(mouse_x, left_edge, right_edge)
+        y = numpy.clip(mouse_y, top_edge, bottom_edge)
+
+        x = x - left_edge
+        y = y - top_edge
+
+        x = numpy.clip(x/self.view_dims.pixmap_width, 0.0, 1.0)
+        y = numpy.clip(y/self.view_dims.pixmap_height, 0.0, 1.0)
+
+        return x, y
+
 class PhotoEditor(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Lens Lab")
         self.setGeometry(100, 100, 1800, 900)
+
+        self.view_dims = ViewDims()
 
         # Central widget setup
         self.central_widget = QWidget()
@@ -32,6 +109,7 @@ class PhotoEditor(QMainWindow):
         self.photo_view = QGraphicsView()
         self.photo_scene = QGraphicsScene()
         self.photo_view.setScene(self.photo_scene)
+
 
         self.photo_thumbnails_layout.addWidget(self.photo_view, stretch=5)
 
@@ -106,10 +184,18 @@ class PhotoEditor(QMainWindow):
 
         self.core = Core()
 
+
+        # mouse event handling
+        event_filter = SceneEventFilter(self.photo_scene, self.core, self.view_dims, self.refresh_image)
+        self.photo_scene.installEventFilter(event_filter)
+
+
         self.n_steps = 64
 
     def tool_selected(self, current, previous):
         # Update tool options dynamically based on selection
+
+        self.core.image.set_crop_disabled()
 
         #self.core.save_curr_settings()
         self._clear_layout(self.tool_options_layout)
@@ -414,10 +500,14 @@ class PhotoEditor(QMainWindow):
 
             
         elif current.text() == "Crop":
-            self.tool_options_layout.addWidget(QLabel("Copping Options"))
+
+            self.core.image.set_crop_enabled()
+
+            self.tool_options_layout.addWidget(QLabel("Cropping Options"))
 
             aspect_ratio_list = QListWidget()
-            aspect_ratio_list.addItems(["Free hand", "Original image", "16:9", "4:3", "3:2", "1.5:1", "1:1", "9:16", "3:4", "2:3", "1:1.5"])
+
+            aspect_ratio_list.addItems(self.core.image.crop_modes)
             font = QFont()
             font.setPointSize(16)
             aspect_ratio_list.setFont(font)
@@ -425,8 +515,9 @@ class PhotoEditor(QMainWindow):
             aspect_ratio_list.currentItemChanged.connect(self.on_aspect_ratio_selected)   
             self.tool_options_layout.addWidget(aspect_ratio_list)
 
-            aspect_ratio_list.setCurrentRow(3)
+            aspect_ratio_list.setCurrentRow(self.core.image.crop_curr)
 
+            
 
         # image export, or time-lapse export
         elif current.text() == "Export":
@@ -499,17 +590,26 @@ class PhotoEditor(QMainWindow):
 
         self.display_image(x)
         self.update_histogram(hist)
-        
+    
+
+    def refresh_image(self):
+        x    = self.core.get_curr_image()
+        hist = self.core.get_curr_histogram()
+
+        self.display_image(x)
+        self.update_histogram(hist) 
+
 
     def display_image(self, x):
         pixmap = self._numpy_to_qpixmap(x)
         
-        #self.photo_scene.clear()    
-        #self.photo_scene.addPixmap(pixmap)
-        #self.photo_view.fitInView(self.photo_scene.itemsBoundingRect(), Qt.KeepAspectRatio)
+        self.photo_scene.clear()    
+        self.photo_scene.addPixmap(pixmap)
+        self.photo_view.fitInView(self.photo_scene.itemsBoundingRect(), Qt.KeepAspectRatio)
         
         self.photo_scene.clear()
 
+        
         # Resize pixmap to fit within view while keeping aspect ratio and padding with zeros
         view_width = self.photo_view.width()
         view_height = self.photo_view.height()
@@ -517,6 +617,13 @@ class PhotoEditor(QMainWindow):
         scaled_pixmap = pixmap.scaled(view_width, view_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         padded_image = QImage(view_width, view_height, QImage.Format_ARGB32)
         padded_image.fill(Qt.black)  # Fill with black (or zeros)
+
+
+        self.view_dims.view_width    = self.photo_view.width()
+        self.view_dims.view_height   = self.photo_view.height()
+        self.view_dims.pixmap_width  = scaled_pixmap.width()
+        self.view_dims.pixmap_height = scaled_pixmap.height()
+
 
         painter = QPainter(padded_image)
         x_offset = (view_width - scaled_pixmap.width()) // 2
@@ -555,7 +662,7 @@ class PhotoEditor(QMainWindow):
     def on_split_preview_click(self):
         self.core.split_preview_toogle()
 
-        self._refresh_image()
+        self.refresh_image()
 
     def on_stacking_click(self, list_widget, slider):
         row_idx       = list_widget.currentRow()
@@ -565,7 +672,7 @@ class PhotoEditor(QMainWindow):
 
         self.core.stacking(stacking_type, photos_count)
 
-        self._refresh_image()
+        self.refresh_image()
     
     def on_ev_change(self, label, slider, value):
         if value is not None:
@@ -575,7 +682,7 @@ class PhotoEditor(QMainWindow):
             slider.setValue(int(self.n_steps*value))
         label.setText("Exposure " + str(round(value, 2)))
 
-        self._refresh_image()
+        self.refresh_image()
 
     def on_temperature_change(self, label, slider, value):
         if value is not None:
@@ -586,7 +693,7 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Temperature (white balance) " + str(int(value)))
 
-        self._refresh_image()
+        self.refresh_image()
 
 
 
@@ -600,7 +707,7 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Brightness " + str(round(value, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
 
     def on_contrast_change(self, label, slider, value):
@@ -612,7 +719,7 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Contrast " + str(round(value, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
 
     def on_saturation_change(self, label, slider, value):
@@ -624,7 +731,7 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Saturation " + str(round(value, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
 
     def on_vibrance_change(self, label, slider, value):
@@ -636,7 +743,7 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Vibrance " + str(round(value, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
 
     def on_tones_change(self, label_s, label_m, label_h, slider_s, slider_m, slider_h, value_s, value_m, value_h):
@@ -652,7 +759,7 @@ class PhotoEditor(QMainWindow):
         label_m.setText("Midtones " + str(round(value_m, 2)))
         label_h.setText("Highlights " + str(round(value_h, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
 
     def on_equalisation_change(self, label, slider, value):
@@ -664,22 +771,17 @@ class PhotoEditor(QMainWindow):
 
         label.setText("Equalisation " + str(round(value, 2)))
     
-        self._refresh_image()
+        self.refresh_image()
 
     def on_export_image_button(self, extension):
         self.core.export_curr(extension)
 
     def on_aspect_ratio_selected(self, current, previous):
-        print("on_aspect_ratio_selected = ", current.text())
+        self.core.image.set_crop_aspect_ratio(current.text())
+        self.refresh_image()
 
 
-    def _refresh_image(self):
-        x    = self.core.get_curr_image()
-        hist = self.core.get_curr_histogram()
-
-        self.display_image(x)
-        self.update_histogram(hist)
-
+    
 
     def _clear_layout(self, layout):
         while layout.count():  # Loop until no items are left in the layout

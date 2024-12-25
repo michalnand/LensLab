@@ -18,8 +18,6 @@ class Core:
 
         self.image = Image(self.loader[self.current_idx])
 
-        self.image.load
-
     def get_count(self):
         return len(self.loader)
 
@@ -125,7 +123,6 @@ class Core:
         return self.image.equalisation_default
         
     
-
     def split_preview_toogle(self):
         self.image.split_preview_toogle()
     
@@ -243,7 +240,8 @@ class Core:
     def set_equalisation(self, value):
         self.image.set_equalisation(value)
 
-    
+    def set_mouse_for_crop(self, x, y, clicked, mode):
+        print("set mouse ", x, y, clicked, mode)  
 
     def _split_file_name(self, idx):
         image_file_name = self.loader.get_name(idx)

@@ -63,6 +63,22 @@ class Image:
         self.split_preview = 0
 
    
+        self.crop_modes     = ["Original image", "Free hand", "16:9", "4:3", "3:2", "1:1", "9:16", "3:4", "2:3", "1.85:1", "2.35:1", "16:10"]
+        self.crop_ratio_x   = [-1,   -1, 16, 4, 3, 1,  9, 3, 2, 1.85, 2.35, 16]
+        self.crop_ratio_y   = [-1,   -1,  9, 3, 2, 1, 16, 4, 3,    1,    1, 10]
+
+        self.crop_default   = 0
+        self.crop_curr      = 0
+
+        self.crop_left      = 0.0
+        self.crop_right     = 1.0
+        self.crop_top       = 0.0
+        self.crop_bottom    = 1.0
+
+        self.crop_enabled   = False
+
+        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+
 
     def get_image(self):
         return self.image_curr
@@ -139,9 +155,133 @@ class Image:
         self.equalisation_curr = value
         self.update()  
 
+    def set_crop_enabled(self):
+        self.crop_enabled = True
+
+    def set_crop_disabled(self):
+        self.crop_enabled = False   
+
+    def set_crop_aspect_ratio(self, mode_name):
+        self.set_crop_enabled()
+        self.crop_curr = self.crop_default
+
+        for i in range(len(self.crop_modes)):
+            if mode_name == self.crop_modes[i]:
+                self.crop_curr = i
+                break
+
+        self.crop_left      = 0.0
+        self.crop_right     = 1.0
+        self.crop_top       = 0.0
+        self.crop_bottom    = 1.0
+
+        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+        self.image_curr = self._plot_crop_rectangle(self.image_processed.copy())
+       
+
+    def _plot_crop_rectangle(self, img):
+        result = cv2.line(img, (self.rect_left, self.rect_top), (self.rect_right, self.rect_top), (0, 1, 0), 2)
+        result = cv2.line(result, (self.rect_left, self.rect_bottom), (self.rect_right, self.rect_bottom), (0, 1, 0), 2)
+        result = cv2.line(result, (self.rect_left, self.rect_top), (self.rect_left, self.rect_bottom), (0, 1, 0), 2)
+        result = cv2.line(result, (self.rect_right, self.rect_top), (self.rect_right, self.rect_bottom), (0, 1, 0), 2)
+
+        result[self.rect_top:self.rect_bottom, self.rect_left:self.rect_right, :]*= 5.0
+        result/= 5.0
+
+        return result
+
+
+
+    def _get_crop_rectangle(self, width, height, center_x = None, center_y = None):
+        aspect_width = self.crop_ratio_x[self.crop_curr]
+        aspect_height = self.crop_ratio_y[self.crop_curr]
+
+        # original image
+        if aspect_width < 0 or aspect_height < 0:
+            rect_left      = 0
+            rect_right     = width
+            rect_top       = 0
+            rect_bottom    = height
+        # free hand mode
+        elif aspect_width < 0 or aspect_height < 0:
+            rect_left      = 0
+            rect_right     = width
+            rect_top       = 0
+            rect_bottom    = height
+
+        else:
+            # Calculate the aspect ratio
+            aspect_ratio = aspect_width / aspect_height
+
+            # Calculate the aspect ratio of the original rectangle
+            original_aspect_ratio = width / height
+
+            if original_aspect_ratio > aspect_ratio:
+                # Original is wider than the desired aspect ratio
+                rect_height = height
+                rect_width = rect_height * aspect_ratio
+            else:
+                # Original is taller than the desired aspect ratio
+                rect_width = width
+                rect_height = rect_width / aspect_ratio
+
+            if center_x is None:
+                center_x = width/2
+
+            if center_y is None:
+                center_y = height/2
+
+            # Ensure the center is within bounds and adjust if needed
+            half_rect_width = rect_width / 2
+            half_rect_height = rect_height / 2
+
+            clipped_center_x = numpy.clip(center_x, half_rect_width, width - half_rect_width)
+            clipped_center_y = numpy.clip(center_y, half_rect_height, height - half_rect_height)
+
+            # Calculate the coordinates of the rectangle
+            rect_left = clipped_center_x - half_rect_width
+            rect_right = clipped_center_x + half_rect_width
+            rect_top = clipped_center_y - half_rect_height
+            rect_bottom = clipped_center_y + half_rect_height
+
+
+
+        rect_right   = int(numpy.clip(rect_right, 0, width-1))
+        rect_left    = int(numpy.clip(rect_left,  0, width-1))
+
+        rect_bottom  = int(numpy.clip(rect_bottom, 0, height-1))
+        rect_top     = int(numpy.clip(rect_top,    0, height-1))
+
+        print(">>> ", rect_left, rect_right, rect_top, rect_bottom)
+
+        return rect_left, rect_right, rect_top, rect_bottom
+
+
+
+    def set_crop_event(self, x, y, mouse_click):
+        if self.crop_enabled != True:
+            return
+        
+
+        print("crop_enabled     ", self.crop_enabled)
+        print("set_crop_event   ", x, y, mouse_click)
+        print("state            ", self.crop_modes[self.crop_curr], self.crop_ratio_x[self.crop_curr], self.crop_ratio_y[self.crop_curr])
+        print("\n\n")
+
+        center_x = self.image_curr.shape[1]*x 
+        center_y = self.image_curr.shape[0]*y
+
+        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0], center_x, center_y)
+        self.image_curr = self._plot_crop_rectangle(self.image_processed.copy())
+       
+
     def update(self):
+        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+
         x = self.image_orig_small.copy()
-        self.image_curr = self._update(x)
+        self.image_processed = self._update(x)
+        self.image_curr      = self._plot_crop_rectangle(self.image_processed.copy())
+
        
         self.update_histogram()
 
@@ -283,6 +423,14 @@ class Image:
         result["equalisation"]["max"]     = self.equalisation_max
         result["equalisation"]["curr"]    = self.equalisation_curr
 
+        result["crop"] = {}
+        result["crop"]["default"]   = self.crop_default
+        result["crop"]["curr"]      = self.crop_curr
+        result["crop"]["left"]      = self.crop_left
+        result["crop"]["right"]     = self.crop_right
+        result["crop"]["top"]       = self.crop_top
+        result["crop"]["bottom"]    = self.crop_bottom
+        
         result_json = json.dumps(result)
                                  
         f = open(file_name, 'w')
@@ -336,4 +484,13 @@ class Image:
             self.equalisation_min     = float(result["equalisation"]["min"])
             self.equalisation_max     = float(result["equalisation"]["max"])
             self.equalisation_curr    = float(result["equalisation"]["curr"])
-        
+
+            self.crop_default   = int(result["crop"]["default"])
+            self.crop_curr      = int(result["crop"]["curr"])
+
+            self.crop_left      = float(result["crop"]["left"])
+            self.crop_right     = float(result["crop"]["right"])
+            self.crop_top       = float(result["crop"]["top"])
+            self.crop_bottom    = float(result["crop"]["bottom"])
+
+
