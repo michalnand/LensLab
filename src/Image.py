@@ -145,21 +145,21 @@ class Image:
        
         self.update_histogram()
 
+        if self.split_preview:
+            height = self.image_curr.shape[1]
+            width  = self.image_curr.shape[1] 
 
-    def split_preview_toogle(self):
-        self.update()   
-
-        height = self.image_curr.shape[1]
-        width  = self.image_curr.shape[1]
-
-        if self.split_preview != 0:
             self.image_curr[:, 0:width//2, :] = self.image_orig_small[:, 0:width//2, :]
-
             self.image_curr = cv2.line(self.image_curr, (width//2, 0), (width//2, height), (0.0, 0.7, 0), 2) 
 
+
+    def split_preview_toogle(self):   
+        if self.split_preview != 0:
             self.split_preview = 0
         else:
             self.split_preview = 1
+
+        self.update()
 
 
 
@@ -217,7 +217,7 @@ class Image:
         self.histogram[3] = b/(b.sum() + 1e-6)
 
         # histogram smoothing
-        window_size = 7
+        window_size = 9
         kernel = numpy.ones(window_size) / window_size
 
         for n in range(self.histogram.shape[0]):
