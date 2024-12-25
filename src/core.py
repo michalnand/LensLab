@@ -53,17 +53,51 @@ class Core:
 
     def get_brightness(self):
         return self.image.get_brightness()
+    
+    def reset_brightness(self):
+        self.image.set_brightness(self.image.brightness_default)
+        return self.image.brightness_default
 
     def get_contrast(self):
         return self.image.get_contrast()
+    
+    def reset_contrast(self):
+        self.image.set_contrast(self.image.contrast_default)
+        return self.image.contrast_default
 
     def get_saturation(self):
         return self.image.get_saturation()
     
+    def reset_saturation(self):
+        self.image.set_saturation(self.image.saturation_default)
+        return self.image.saturation_default
+    
     def get_vibrance(self):
         return self.image.get_vibrance()
+    
+    def reset_vibrance(self):
+        self.image.set_vibrance(self.image.vibrance_default)
+        return self.image.vibrance_default
+    
+    def get_tones(self):
+        return self.image.get_tones()
+    
+    def reset_tones(self):
+        self.image.set_tones(self.image.tones_default, self.image.tones_default, self.image.tones_default)
+        return self.image.tones_default, self.image.tones_default, self.image.tones_default
+    
+
+
+
+    def get_equalization(self):
+        return self.image.get_equalization()
+    
+    def reset_equalization(self):
+        self.image.set_equalization(self.image.equalization_default)
+        return self.image.equalization_default
         
-   
+    
+
     
 
     def stacking(self, stacking_type, photos_count, mask = None):
@@ -173,5 +207,10 @@ class Core:
     def set_vibrance(self, value):
         self.image.set_vibrance(value)
 
+    def set_tones(self, shadows_curr, midtones_curr, highlight_curr):
+        self.image.set_tones(shadows_curr, midtones_curr, highlight_curr)
+      
+    def set_equalization(self, value):
+        self.image.set_equalization(value)
 
     

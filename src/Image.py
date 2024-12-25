@@ -45,6 +45,19 @@ class Image:
         self.vibrance_max = 4.0
         self.vibrance_curr= 1.0
 
+        self.tones_default = 0.0
+        self.tones_min     = -0.1
+        self.tones_max     = 0.1
+        self.shadows_curr  = 0.0
+        self.midtones_curr = 0.0
+        self.highlight_curr= 0.0
+
+
+        self.equalization_default = 0.0
+        self.equalization_min = 0.0
+        self.equalization_max = 1.0
+        self.equalization_curr= 0.0
+
     def get_image(self):
         return self.image_curr
     
@@ -68,6 +81,12 @@ class Image:
     
     def get_vibrance(self):
         return self.vibrance_min, self.vibrance_max, self.vibrance_curr 
+    
+    def get_tones(self):
+        return self.tones_min, self.tones_max, self.shadows_curr, self.midtones_curr, self.highlight_curr
+    
+    def get_equalization(self):
+        return self.equalization_min, self.equalization_max, self.equalization_curr 
     
 
     
@@ -101,6 +120,17 @@ class Image:
 
     def set_vibrance(self, value):
         self.vibrance_curr = value
+        self._update() 
+
+    def set_tones(self, shadows_curr, midtones_curr, highlight_curr):
+        self.shadows_curr    = shadows_curr
+        self.midtones_curr   = midtones_curr
+        self.highlight_curr  = highlight_curr
+        self._update()
+     
+
+    def set_equalization(self, value):
+        self.equalization_curr = value
         self._update()  
 
     def _update(self):
@@ -115,6 +145,12 @@ class Image:
 
         x = numpy.clip(x, 0.0, 1.0)
 
+        x = filters.adjust_tones(x, self.shadows_curr, self.midtones_curr, self.highlight_curr)
+        x = numpy.clip(x, 0.0, 1.0)
+
+        x = filters.histogram_equalisation(x, self.equalization_curr)
+        x = numpy.clip(x, 0.0, 1.0)
+
         self.image_curr = x 
 
         self.update_histogram()
@@ -125,16 +161,31 @@ class Image:
         #tmp = cv2.resize(self.image_curr, (self.image_curr.shape[1]//16, self.image_curr.shape[0]//16))   
         tmp = numpy.array(self.image_curr*255, dtype=numpy.uint8)
 
-        self.histogram = numpy.zeros((4, 256))
+        hist_size = 255
+
+        self.histogram = numpy.zeros((4, hist_size))
 
 
-        r = cv2.calcHist([tmp], [0], None, [256], [0, 256])[:, 0]
-        g = cv2.calcHist([tmp], [1], None, [256], [0, 256])[:, 0]
-        b = cv2.calcHist([tmp], [2], None, [256], [0, 256])[:, 0]
+        r = cv2.calcHist([tmp], [0], None, [hist_size], [0, 256])[:, 0]
+        g = cv2.calcHist([tmp], [1], None, [hist_size], [0, 256])[:, 0]
+        b = cv2.calcHist([tmp], [2], None, [hist_size], [0, 256])[:, 0]
+
+
+        w = r + g + b
+        w = w/(w.sum() + 1e-6)
             
-        self.histogram[0] = r + g + b
-        self.histogram[1] = r
-        self.histogram[2] = g
-        self.histogram[3] = b
+        self.histogram[0] = w   
+        self.histogram[1] = r/(r.sum() + 1e-6)
+        self.histogram[2] = g/(g.sum() + 1e-6)
+        self.histogram[3] = b/(b.sum() + 1e-6)
+
+        # histogram smoothing
+        window_size = 7
+        kernel = numpy.ones(window_size) / window_size
+
+        for n in range(self.histogram.shape[0]):
+            self.histogram[n] = numpy.convolve(self.histogram[n], kernel, mode='same')
+    
+        return self.histogram
 
 

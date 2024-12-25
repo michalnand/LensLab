@@ -127,3 +127,41 @@ def adjust_white_balance(x, temperature = 6500):
     balanced_image = x * compensation_factors
     
     return balanced_image
+
+
+
+
+def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
+    # define tone ranges
+    dark_mask = image < 0.33
+    mid_mask = (image >= 0.33) & (image < 0.67)
+    light_mask = image >= 0.67
+    
+    # apply shifts to the respective tone ranges
+    adjusted_image = numpy.zeros_like(image)
+    adjusted_image[dark_mask]   = numpy.clip(image[dark_mask] + dark_shift, 0, 1)
+    adjusted_image[mid_mask]    = numpy.clip(image[mid_mask] + mid_shift, 0, 1)
+    adjusted_image[light_mask]  = numpy.clip(image[light_mask] + light_shift, 0, 1)
+    
+    return adjusted_image
+
+
+def histogram_equalisation(image, strength):
+   
+    # Convert RGB to LAB for luminance processing
+    lab_image = cv2.cvtColor((image * 255).astype(numpy.uint8), cv2.COLOR_RGB2LAB)
+    l, a, b = cv2.split(lab_image)
+
+    # Perform histogram equalization on the L channel
+    equalized_l = cv2.equalizeHist(l)
+
+    # Blend the original and equalized L channels based on the strength
+    blended_l = cv2.addWeighted(l.astype(numpy.float32), 1 - strength, 
+                                equalized_l.astype(numpy.float32), strength, 0)
+
+    # Recombine LAB channels and convert back to RGB    
+    lab_image = cv2.merge((blended_l.astype(numpy.uint8), a, b))
+    equalized_image = cv2.cvtColor(lab_image, cv2.COLOR_LAB2RGB)
+
+    # Convert back to [0, 1] float32
+    return equalized_image.astype(numpy.float32) / 255

@@ -44,7 +44,7 @@ class PhotoEditor(QMainWindow):
 
         # Tool selection list
         self.tool_list = QListWidget()
-        self.tool_list.addItems(["Stacking", "Exposure", "Brightness and Contrast", "Colors", "Crop", "AI Sky Masking"])
+        self.tool_list.addItems(["Stacking", "Exposure", "Brightness and Contrast", "Colors", "Tones", "Crop", "AI Sky Masking"])
         self.tool_list.currentItemChanged.connect(self.tool_selected)   
         self.right_layout.addWidget(self.tool_list, stretch=2)
 
@@ -179,51 +179,229 @@ class PhotoEditor(QMainWindow):
 
             
 
-
-
         elif current.text() == "Brightness and Contrast":
 
-            brightness_min, brightness_max, brightness_curr  = self.core.get_brightness()
-            contrast_min, contrast_max, contrast_curr        = self.core.get_contrast()
+            brightness_min, brightness_max, brightness_curr = self.core.get_brightness()
+            brightness_layout = QHBoxLayout()
 
+            # slider
             brightness_slider = QSlider(Qt.Horizontal)
             brightness_slider.setRange(int(n_steps*brightness_min), int(n_steps*brightness_max))
             brightness_slider.setValue(int(n_steps*brightness_curr))
-            self.tool_options_layout.addWidget(QLabel("Brightness"))
-            self.tool_options_layout.addWidget(brightness_slider)
+            brightness_layout.addWidget(brightness_slider)            
 
-            contrast_slider = QSlider(Qt.Horizontal)    
+            # button
+            brightness_reset_button = QPushButton("X")
+            brightness_reset_button.setFixedSize(30, 30)
+            brightness_layout.addWidget(brightness_reset_button)  
+
+            # label
+            brightness_label = QLabel("Brightness " + str(round(brightness_curr, 2)))
+
+            self.tool_options_layout.addWidget(brightness_label)   
+            self.tool_options_layout.addLayout(brightness_layout)
+
+            # callbacks
+            brightness_slider.valueChanged.connect(lambda : self.on_brightness_change(brightness_label, brightness_slider, brightness_slider.value()/n_steps))
+            brightness_reset_button.clicked.connect(lambda: self.on_brightness_change(brightness_label, brightness_slider, None))
+
+
+
+            contrast_min, contrast_max, contrast_curr = self.core.get_contrast()
+            contrast_layout = QHBoxLayout()
+
+            # slider
+            contrast_slider = QSlider(Qt.Horizontal)
             contrast_slider.setRange(int(n_steps*contrast_min), int(n_steps*contrast_max))
             contrast_slider.setValue(int(n_steps*contrast_curr))
-            self.tool_options_layout.addWidget(QLabel("Contrast"))
-            self.tool_options_layout.addWidget(contrast_slider)
+            contrast_layout.addWidget(contrast_slider)            
 
+            # button
+            contrast_reset_button = QPushButton("X")
+            contrast_reset_button.setFixedSize(30, 30)
+            contrast_layout.addWidget(contrast_reset_button)  
 
-            brightness_slider.valueChanged.connect(lambda : self.on_brightness_slider_change(brightness_slider.value()/n_steps))
-            contrast_slider.valueChanged.connect(lambda : self.on_contrast_slider_change(contrast_slider.value()/n_steps))
+            # label
+            contrast_label = QLabel("Contrast " + str(round(contrast_curr, 2)))
 
+            self.tool_options_layout.addWidget(contrast_label)   
+            self.tool_options_layout.addLayout(contrast_layout)
 
+            # callbacks
+            contrast_slider.valueChanged.connect(lambda : self.on_contrast_change(contrast_label, contrast_slider, contrast_slider.value()/n_steps))
+            contrast_reset_button.clicked.connect(lambda: self.on_contrast_change(contrast_label, contrast_slider, None))
+
+        
 
         elif current.text() == "Colors":
-        
-            saturation_min, saturation_max, saturation_curr  = self.core.get_saturation()
-            vibrance_min, vibrance_max, vibrance_curr        = self.core.get_vibrance()
 
+
+
+
+            saturation_min, saturation_max, saturation_curr = self.core.get_saturation()
+            saturation_layout = QHBoxLayout()
+
+            # slider
             saturation_slider = QSlider(Qt.Horizontal)
             saturation_slider.setRange(int(n_steps*saturation_min), int(n_steps*saturation_max))
             saturation_slider.setValue(int(n_steps*saturation_curr))
-            self.tool_options_layout.addWidget(QLabel("Saturation"))
-            self.tool_options_layout.addWidget(saturation_slider)
+            saturation_layout.addWidget(saturation_slider)            
 
-            vibrance_slider = QSlider(Qt.Horizontal)    
+            # button
+            saturation_reset_button = QPushButton("X")
+            saturation_reset_button.setFixedSize(30, 30)
+            saturation_layout.addWidget(saturation_reset_button)  
+
+            # label
+            saturation_label = QLabel("Saturation " + str(round(saturation_curr, 2)))
+
+            self.tool_options_layout.addWidget(saturation_label)   
+            self.tool_options_layout.addLayout(saturation_layout)
+
+            # callbacks
+            saturation_slider.valueChanged.connect(lambda : self.on_saturation_change(saturation_label, saturation_slider, saturation_slider.value()/n_steps))
+            saturation_reset_button.clicked.connect(lambda: self.on_saturation_change(saturation_label, saturation_slider, None))
+
+            
+
+
+            vibrance_min, vibrance_max, vibrance_curr = self.core.get_vibrance()
+            vibrance_layout = QHBoxLayout()
+
+            # slider
+            vibrance_slider = QSlider(Qt.Horizontal)
             vibrance_slider.setRange(int(n_steps*vibrance_min), int(n_steps*vibrance_max))
             vibrance_slider.setValue(int(n_steps*vibrance_curr))
-            self.tool_options_layout.addWidget(QLabel("Vibrance"))
-            self.tool_options_layout.addWidget(vibrance_slider)
+            vibrance_layout.addWidget(vibrance_slider)            
 
-            saturation_slider.valueChanged.connect(lambda : self.on_saturation_slider_change(saturation_slider.value()/n_steps))
-            vibrance_slider.valueChanged.connect(lambda : self.on_vibrance_slider_change(vibrance_slider.value()/n_steps))
+            # button
+            vibrance_reset_button = QPushButton("X")
+            vibrance_reset_button.setFixedSize(30, 30)
+            vibrance_layout.addWidget(vibrance_reset_button)  
 
+            # label
+            vibrance_label = QLabel("Vibrance " + str(round(vibrance_curr, 2)))
+
+            self.tool_options_layout.addWidget(vibrance_label)   
+            self.tool_options_layout.addLayout(vibrance_layout)
+
+            # callbacks
+            vibrance_slider.valueChanged.connect(lambda : self.on_vibrance_change(vibrance_label, vibrance_slider, vibrance_slider.value()/n_steps))
+            vibrance_reset_button.clicked.connect(lambda: self.on_vibrance_change(vibrance_label, vibrance_slider, None))
+
+            
+            
+            
+            
+            equalization_min, equalization_max, equalization_curr = self.core.get_equalization()
+            equalization_layout = QHBoxLayout()
+
+            # slider
+            equalization_slider = QSlider(Qt.Horizontal)
+            equalization_slider.setRange(int(n_steps*equalization_min), int(n_steps*equalization_max))
+            equalization_slider.setValue(int(n_steps*equalization_curr))
+            equalization_layout.addWidget(equalization_slider)            
+
+            # button
+            equalization_reset_button = QPushButton("X")
+            equalization_reset_button.setFixedSize(30, 30)
+            equalization_layout.addWidget(equalization_reset_button)  
+
+            # label
+            equalization_label = QLabel("Equalization " + str(round(equalization_curr, 2)))
+
+            self.tool_options_layout.addWidget(equalization_label)   
+            self.tool_options_layout.addLayout(equalization_layout)
+
+            # callbacks
+            equalization_slider.valueChanged.connect(lambda : self.on_equalization_change(equalization_label, equalization_slider, equalization_slider.value()/n_steps))
+            equalization_reset_button.clicked.connect(lambda: self.on_equalization_change(equalization_label, equalization_slider, None))
+
+           
+        elif current.text() == "Tones":
+
+
+            tones_min, tones_max, shadows_curr, midtones_curr, highlights_curr = self.core.get_tones()
+            shadow_layout = QHBoxLayout()
+
+            # slider
+            slider_s = QSlider(Qt.Horizontal)
+            slider_s.setRange(int(n_steps*tones_min), int(n_steps*tones_max))
+            slider_s.setValue(int(n_steps*shadows_curr))
+            shadow_layout.addWidget(slider_s)            
+
+            # button
+            shadow_reset_button = QPushButton("X")
+            shadow_reset_button.setFixedSize(30, 30)
+            shadow_layout.addWidget(shadow_reset_button)  
+
+            # label
+            label_s = QLabel("Shadows " + str(round(shadows_curr, 2)))
+
+            self.tool_options_layout.addWidget(label_s)   
+            self.tool_options_layout.addLayout(shadow_layout)
+
+
+            midtones_layout = QHBoxLayout()
+
+            # slider
+            slider_m = QSlider(Qt.Horizontal)
+            slider_m.setRange(int(n_steps*tones_min), int(n_steps*tones_max))
+            slider_m.setValue(int(n_steps*midtones_curr))
+            midtones_layout.addWidget(slider_m)            
+
+            # button
+            midtones_reset_button = QPushButton("X")
+            midtones_reset_button.setFixedSize(30, 30)
+            midtones_layout.addWidget(midtones_reset_button)  
+
+            # label
+            label_m = QLabel("Midtones " + str(round(midtones_curr, 2)))
+
+            self.tool_options_layout.addWidget(label_m)   
+            self.tool_options_layout.addLayout(midtones_layout)
+
+
+
+
+            highlights_layout = QHBoxLayout()
+
+            # slider
+            slider_h = QSlider(Qt.Horizontal)
+            slider_h.setRange(int(n_steps*tones_min), int(n_steps*tones_max))
+            slider_h.setValue(int(n_steps*highlights_curr))
+            highlights_layout.addWidget(slider_h)            
+
+            # button
+            highlights_reset_button = QPushButton("X")
+            highlights_reset_button.setFixedSize(30, 30)
+            highlights_layout.addWidget(highlights_reset_button)  
+
+            # label
+            label_h = QLabel("highlights " + str(round(highlights_curr, 2)))
+
+            self.tool_options_layout.addWidget(label_h)   
+            self.tool_options_layout.addLayout(highlights_layout)
+
+
+
+
+
+            # callbacks
+            slider_s.valueChanged.connect(lambda : self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, slider_s.value()/n_steps, slider_m.value()/n_steps, slider_h.value()/n_steps))
+            slider_m.valueChanged.connect(lambda : self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, slider_s.value()/n_steps, slider_m.value()/n_steps, slider_h.value()/n_steps))
+            slider_h.valueChanged.connect(lambda : self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, slider_s.value()/n_steps, slider_m.value()/n_steps, slider_h.value()/n_steps))
+            
+            
+            shadow_reset_button.clicked.connect(lambda: self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, None, None, None))
+            midtones_reset_button.clicked.connect(lambda: self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, None, None, None))
+            highlights_reset_button.clicked.connect(lambda: self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, None, None, None))
+
+            
+
+
+
+          
 
         elif current.text() == "Crop":
             self.tool_options_layout.addWidget(QLabel("Crop Tool Options"))
@@ -253,7 +431,7 @@ class PhotoEditor(QMainWindow):
         QFileDialog.getSaveFileName(self, "Export Timelapse", "", "Videos (*.mp4 *.avi)")
 
     def load_images(self, folder):
-        self._clear_tool_layout()
+        self._clear_layout(self.tool_options_layout)
 
         print("loading images from ", folder)
         self.core.load_folder(folder)
@@ -274,7 +452,7 @@ class PhotoEditor(QMainWindow):
         self.thumbnail_clicked(self.thumbnails_list.item(0))
 
     def thumbnail_clicked(self, item):
-        self._clear_tool_layout()
+        self._clear_layout(self.tool_options_layout)
 
         index = self.thumbnails_list.row(item)
 
@@ -336,14 +514,7 @@ class PhotoEditor(QMainWindow):
         qimage = QImage(x_tmp.data, width, height, bytes_per_line, QImage.Format_BGR888)
         return QPixmap.fromImage(qimage)    
 
-    def _clear_tool_layout(self):
-        # Iterate and remove widgets
-        while self.tool_options_layout.count():
-            item = self.tool_options_layout.takeAt(0)  
-            widget = item.widget()       
-            if widget is not None:
-                widget.deleteLater()     
-            del item                     
+           
 
 
     def on_stacking_click(self, list_widget, slider):
@@ -380,27 +551,83 @@ class PhotoEditor(QMainWindow):
 
 
 
-    def on_brightness_slider_change(self, value):
-        self.core.set_brightness(value)
+    def on_brightness_change(self, label, slider, value):
+        if value is not None:
+            self.core.set_brightness(value)
+        else:
+            value = self.core.reset_brightness()
+            slider.setValue(int(self.n_steps*value))
 
-        self._refresh_image()
-
-    def on_contrast_slider_change(self, value):
-        self.core.set_contrast(value)
-
-        self._refresh_image()
-
-
-    def on_saturation_slider_change(self, value):
-        self.core.set_saturation(value)
-
-        self._refresh_image()
-
-    def on_vibrance_slider_change(self, value):
-        self.core.set_vibrance(value)
-
-        self._refresh_image()
+        label.setText("Brightness " + str(round(value, 2)))
     
+        self._refresh_image()
+
+
+    def on_contrast_change(self, label, slider, value):
+        if value is not None:
+            self.core.set_contrast(value)
+        else:
+            value = self.core.reset_contrast()
+            slider.setValue(int(self.n_steps*value))
+
+        label.setText("Contrast " + str(round(value, 2)))
+    
+        self._refresh_image()
+
+
+    def on_saturation_change(self, label, slider, value):
+        if value is not None:
+            self.core.set_saturation(value)
+        else:
+            value = self.core.reset_saturation()
+            slider.setValue(int(self.n_steps*value))
+
+        label.setText("Saturation " + str(round(value, 2)))
+    
+        self._refresh_image()
+
+
+    def on_vibrance_change(self, label, slider, value):
+        if value is not None:
+            self.core.set_vibrance(value)
+        else:
+            value = self.core.reset_vibrance()
+            slider.setValue(int(self.n_steps*value))
+
+        label.setText("Vibrance " + str(round(value, 2)))
+    
+        self._refresh_image()
+
+
+    def on_tones_change(self, label_s, label_m, label_h, slider_s, slider_m, slider_h, value_s, value_m, value_h):
+        if value_s is not None:
+            self.core.set_tones(value_s, value_m, value_h)
+        else:
+            value_s, value_m, value_h = self.core.reset_tones()
+            slider_s.setValue(int(self.n_steps*value_s))
+            slider_m.setValue(int(self.n_steps*value_m))
+            slider_h.setValue(int(self.n_steps*value_h))
+
+        label_s.setText("Shadows " + str(round(value_s, 2)))
+        label_m.setText("Midtones " + str(round(value_m, 2)))
+        label_h.setText("Highlights " + str(round(value_h, 2)))
+    
+        self._refresh_image()
+
+
+    def on_equalization_change(self, label, slider, value):
+        if value is not None:
+            self.core.set_equalization(value)
+        else:
+            value = self.core.reset_equalization()
+            slider.setValue(int(self.n_steps*value))
+
+        label.setText("Equalization " + str(round(value, 2)))
+    
+        self._refresh_image()
+
+  
+
 
     def _refresh_image(self):
         x    = self.core.get_curr_image()
@@ -421,6 +648,11 @@ class PhotoEditor(QMainWindow):
             # Check if the item is a layout
             elif sub_layout := item.layout():
                 self._clear_layout(sub_layout)  # Recursively clear the sub-layout
+
+            else:
+                print("_clear_layout unknown item ", item)
+
+            del item
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
