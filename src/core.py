@@ -39,6 +39,22 @@ class Core:
     def load_curr_settings(self):
         path, file_name = self._split_file_name(self.current_idx)
         self.image.load(path + "/" + file_name + ".json")
+        self.image.update() 
+
+
+    def export_curr(self, extension = None):
+        path, file_name = self._split_file_name(self.current_idx)
+
+        path = path + "/LensLabExported/"
+
+        if os.path.exists(path) != True:
+            os.makedirs(path)
+
+        if extension is None:
+            extension = "jpg"
+
+        self.save_curr_settings()
+        self.image.export(path + file_name, extension)
     
     def get_curr_idx(self):
         return self.current_idx
@@ -110,6 +126,8 @@ class Core:
         
     
 
+    def split_preview_toogle(self):
+        self.image.split_preview_toogle()
     
 
     def stacking(self, stacking_type, photos_count, mask = None):

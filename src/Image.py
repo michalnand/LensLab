@@ -60,6 +60,8 @@ class Image:
         self.equalisation_max = 1.0
         self.equalisation_curr= 0.0
 
+        self.split_preview = 0
+
    
 
     def get_image(self):
@@ -100,45 +102,80 @@ class Image:
         self.contrast_curr = self.contrast_default
         self.saturation_curr = self.saturation_default
         self.vibrance_curr = self.vibrance_default
-        self._update()
+        self.update()
 
     def set_ev(self, value):
         self.ev_curr = value    
-        self._update()
+        self.update()
 
     def set_temperature(self, value):
         self.temperature_curr = value    
-        self._update()
+        self.update()
 
     def set_brightness(self, value):
         self.brightness_curr = value
-        self._update()
+        self.update()
 
     def set_contrast(self, value):
         self.contrast_curr = value
-        self._update()
+        self.update()
 
     def set_saturation(self, value):
         self.saturation_curr = value
-        self._update()
+        self.update()
 
     def set_vibrance(self, value):
         self.vibrance_curr = value
-        self._update() 
+        self.update() 
 
     def set_tones(self, shadows_curr, midtones_curr, highlight_curr):
         self.shadows_curr    = shadows_curr
         self.midtones_curr   = midtones_curr
         self.highlight_curr  = highlight_curr
-        self._update()
+        self.update()
      
 
     def set_equalisation(self, value):
         self.equalisation_curr = value
-        self._update()  
+        self.update()  
 
-    def _update(self):
+    def update(self):
         x = self.image_orig_small.copy()
+        self.image_curr = self._update(x)
+       
+        self.update_histogram()
+
+
+    def split_preview_toogle(self):
+        self.update()   
+
+        height = self.image_curr.shape[1]
+        width  = self.image_curr.shape[1]
+
+        if self.split_preview != 0:
+            self.image_curr[:, 0:width//2, :] = self.image_orig_small[:, 0:width//2, :]
+
+            self.image_curr = cv2.line(self.image_curr, (width//2, 0), (width//2, height), (0.0, 0.7, 0), 2) 
+
+            self.split_preview = 0
+        else:
+            self.split_preview = 1
+
+
+
+    def export(self, file_name, extension):
+        print("exporting to ", file_name)
+        x = self.image_orig.copy()
+        result = self._update(x)
+
+        result = numpy.array(result*255, dtype=numpy.uint8)
+        if extension == "jpg":
+            cv2.imwrite(file_name + ".jpg", result, [int(cv2.IMWRITE_JPEG_QUALITY), 99])
+        else:
+            cv2.imwrite(file_name + ".png", result)
+
+
+    def _update(self, x):
         x = filters.adjust_ev(x, self.ev_curr)
         x = filters.adjust_white_balance(x, self.temperature_curr)
         
@@ -155,11 +192,7 @@ class Image:
         x = filters.histogram_equalisation(x, self.equalisation_curr)
         x = numpy.clip(x, 0.0, 1.0)
 
-        self.image_curr = x 
-
-        self.update_histogram()
-
-        print("setting to ", self.ev_curr, self.temperature_curr, self.brightness_curr, self.contrast_curr)
+        return x
 
     def update_histogram(self): 
         #tmp = cv2.resize(self.image_curr, (self.image_curr.shape[1]//16, self.image_curr.shape[0]//16))   

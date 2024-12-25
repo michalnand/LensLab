@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QListWidget,
     QSlider, QPushButton, QGraphicsView, QGraphicsScene, QFileDialog, QListWidgetItem)
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QFont
 import pyqtgraph as pg
 import os
 
@@ -15,7 +15,7 @@ class PhotoEditor(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Lens Lab")
-        self.setGeometry(100, 100, 1800, 800)
+        self.setGeometry(100, 100, 1800, 900)
 
         # Central widget setup
         self.central_widget = QWidget()
@@ -23,14 +23,29 @@ class PhotoEditor(QMainWindow):
         
         # Main layout
         self.main_layout = QVBoxLayout(self.central_widget)
+        self.main_content_layout = QHBoxLayout()
+
+        # layout for photo view and thumbnails
+        self.photo_thumbnails_layout = QVBoxLayout()
 
         # Photo viewer (central)
         self.photo_view = QGraphicsView()
         self.photo_scene = QGraphicsScene()
         self.photo_view.setScene(self.photo_scene)
-        
-        self.main_content_layout = QHBoxLayout()
-        self.main_content_layout.addWidget(self.photo_view, stretch=5)
+
+        self.photo_thumbnails_layout.addWidget(self.photo_view, stretch=5)
+
+
+        self.thumbnails_list = QListWidget()
+        self.thumbnails_list.setViewMode(QListWidget.IconMode)
+        self.thumbnails_list.setIconSize(QSize(100, 100))
+        self.thumbnails_list.itemClicked.connect(self.thumbnail_clicked)
+
+        self.photo_thumbnails_layout.addWidget(self.thumbnails_list, stretch=1)
+
+
+
+        self.main_content_layout.addLayout(self.photo_thumbnails_layout, stretch=5)
 
         # Right-side layout
         self.right_layout = QVBoxLayout()
@@ -40,13 +55,17 @@ class PhotoEditor(QMainWindow):
         self.histogram_widget.setTitle("Histogram")
         self.histogram_widget.setLabel("left", "Frequency")
         self.histogram_widget.setLabel("bottom", "Pixel Intensity")
-        self.right_layout.addWidget(self.histogram_widget, stretch=2)
+        self.right_layout.addWidget(self.histogram_widget, stretch=1)
 
         # Tool selection list
         self.tool_list = QListWidget()
-        self.tool_list.addItems(["Stacking", "Exposure", "Brightness and Contrast", "Colors", "Tones", "Crop", "AI Sky Masking"])
+        font = QFont()
+        font.setPointSize(16)
+        self.tool_list.setFont(font)
+
+        self.tool_list.addItems(["Stacking", "Exposure", "Brightness and Contrast", "Colors", "Tones", "Crop", "Export"])
         self.tool_list.currentItemChanged.connect(self.tool_selected)   
-        self.right_layout.addWidget(self.tool_list, stretch=2)
+        self.right_layout.addWidget(self.tool_list, stretch=1)
 
         # Tool options (customizable area)
         self.tool_options_layout = QVBoxLayout()
@@ -54,15 +73,17 @@ class PhotoEditor(QMainWindow):
         self.tool_options_container.setLayout(self.tool_options_layout)
         self.right_layout.addWidget(self.tool_options_container, stretch=2)
 
+
+        # split preview button
+        split_preview_button = QPushButton("Split preview")
+
+        self.right_layout.addWidget(split_preview_button)
+        split_preview_button.clicked.connect(self.on_split_preview_click)
+
+
         self.main_content_layout.addLayout(self.right_layout, stretch=2)
         self.main_layout.addLayout(self.main_content_layout, stretch=5)
 
-        # Bottom thumbnails section
-        self.thumbnails_list = QListWidget()
-        self.thumbnails_list.setViewMode(QListWidget.IconMode)
-        self.thumbnails_list.setIconSize(QSize(100, 100))
-        self.thumbnails_list.itemClicked.connect(self.thumbnail_clicked)
-        self.main_layout.addWidget(self.thumbnails_list, stretch=1)
 
         # Menu setup
         self.menu = self.menuBar()
@@ -90,15 +111,8 @@ class PhotoEditor(QMainWindow):
     def tool_selected(self, current, previous):
         # Update tool options dynamically based on selection
 
-        self.core.save_curr_settings()
+        #self.core.save_curr_settings()
         self._clear_layout(self.tool_options_layout)
-
-        '''
-        for i in reversed(range(self.tool_options_layout.count())):
-            item = self.tool_options_layout.itemAt(i).widget()
-            if item is not None:
-                item.deleteLater()   
-        '''
         
         n_steps = self.n_steps
 
@@ -399,18 +413,32 @@ class PhotoEditor(QMainWindow):
             highlights_reset_button.clicked.connect(lambda: self.on_tones_change(label_s, label_m, label_h, slider_s, slider_m, slider_h, None, None, None))
 
             
-
-
-
-          
-
         elif current.text() == "Crop":
-            self.tool_options_layout.addWidget(QLabel("Crop Tool Options"))
-            # Add crop tool specific options here
-        elif current.text() == "AI Sky Masking":
-            self.tool_options_layout.addWidget(QLabel("AI Sky Masking Options"))
-            button = QPushButton("Apply Mask")
-            self.tool_options_layout.addWidget(button)
+            self.tool_options_layout.addWidget(QLabel("Copping Options"))
+
+            aspect_ratio_list = QListWidget()
+            aspect_ratio_list.addItems(["Free hand", "Original image", "16:9", "4:3", "3:2", "1.5:1", "1:1", "9:16", "3:4", "2:3", "1:1.5"])
+            font = QFont()
+            font.setPointSize(16)
+            aspect_ratio_list.setFont(font)
+
+            aspect_ratio_list.currentItemChanged.connect(self.on_aspect_ratio_selected)   
+            self.tool_options_layout.addWidget(aspect_ratio_list)
+
+            aspect_ratio_list.setCurrentRow(3)
+
+
+        # image export, or time-lapse export
+        elif current.text() == "Export":
+            button_jpg = QPushButton("Export image JPG")
+            self.tool_options_layout.addWidget(button_jpg)
+            button_jpg.clicked.connect(lambda: self.on_export_image_button("jpg"))
+
+            button_png = QPushButton("Export image PNG")    
+            self.tool_options_layout.addWidget(button_png)
+            button_png.clicked.connect(lambda: self.on_export_image_button("png"))
+
+        self.tool_options_layout.addStretch()
 
     def open_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Open Folder")
@@ -450,15 +478,20 @@ class PhotoEditor(QMainWindow):
             item.setIcon(icon)
             self.thumbnails_list.addItem(item)
 
+        self.core.set_curr_idx(0)
+        self.core.load_curr_settings()
         self.thumbnail_clicked(self.thumbnails_list.item(0))
 
     def thumbnail_clicked(self, item):
+        self.tool_list.setCurrentRow(0)
+        self.tool_list.setCurrentRow(1)
+        self.core.save_curr_settings()
+
         self._clear_layout(self.tool_options_layout)
 
         index = self.thumbnails_list.row(item)
 
         self.core.set_curr_idx(index)
-
         self.core.load_curr_settings()
 
         x    = self.core.get_curr_image()
@@ -519,6 +552,10 @@ class PhotoEditor(QMainWindow):
 
            
 
+    def on_split_preview_click(self):
+        self.core.split_preview_toogle()
+
+        self._refresh_image()
 
     def on_stacking_click(self, list_widget, slider):
         row_idx       = list_widget.currentRow()
@@ -629,7 +666,11 @@ class PhotoEditor(QMainWindow):
     
         self._refresh_image()
 
-  
+    def on_export_image_button(self, extension):
+        self.core.export_curr(extension)
+
+    def on_aspect_ratio_selected(self, current, previous):
+        print("on_aspect_ratio_selected = ", current.text())
 
 
     def _refresh_image(self):
