@@ -1,5 +1,7 @@
 import numpy
 import cv2
+import json
+import os
 
 import filters
 
@@ -20,9 +22,9 @@ class Image:
 
 
         self.temperature_default = 6500.0
-        self.temperature_min  = 2000.0
-        self.temperature_max  = 20000.0
-        self.temperature_curr = 6500.0  
+        self.temperature_min     = 2000.0
+        self.temperature_max     = 20000.0
+        self.temperature_curr    = 6500.0  
 
         self.brightness_default = 0.0
         self.brightness_min = -1.0
@@ -53,10 +55,12 @@ class Image:
         self.highlight_curr= 0.0
 
 
-        self.equalization_default = 0.0
-        self.equalization_min = 0.0
-        self.equalization_max = 1.0
-        self.equalization_curr= 0.0
+        self.equalisation_default = 0.0
+        self.equalisation_min = 0.0
+        self.equalisation_max = 1.0
+        self.equalisation_curr= 0.0
+
+   
 
     def get_image(self):
         return self.image_curr
@@ -85,8 +89,8 @@ class Image:
     def get_tones(self):
         return self.tones_min, self.tones_max, self.shadows_curr, self.midtones_curr, self.highlight_curr
     
-    def get_equalization(self):
-        return self.equalization_min, self.equalization_max, self.equalization_curr 
+    def get_equalisation(self):
+        return self.equalisation_min, self.equalisation_max, self.equalisation_curr 
     
 
     
@@ -129,8 +133,8 @@ class Image:
         self._update()
      
 
-    def set_equalization(self, value):
-        self.equalization_curr = value
+    def set_equalisation(self, value):
+        self.equalisation_curr = value
         self._update()  
 
     def _update(self):
@@ -148,7 +152,7 @@ class Image:
         x = filters.adjust_tones(x, self.shadows_curr, self.midtones_curr, self.highlight_curr)
         x = numpy.clip(x, 0.0, 1.0)
 
-        x = filters.histogram_equalisation(x, self.equalization_curr)
+        x = filters.histogram_equalisation(x, self.equalisation_curr)
         x = numpy.clip(x, 0.0, 1.0)
 
         self.image_curr = x 
@@ -189,3 +193,114 @@ class Image:
         return self.histogram
 
 
+
+    def save(self, file_name):
+        print("saving to ", file_name)
+        result = {}
+
+        result["ev"] = {}
+        result["ev"]["default"] = self.ev_default
+        result["ev"]["min"]     = self.ev_min
+        result["ev"]["max"]     = self.ev_max
+        result["ev"]["curr"]    = self.ev_curr
+
+        result["temperature"] = {}
+        result["temperature"]["default"] = self.temperature_default
+        result["temperature"]["min"]     = self.temperature_min
+        result["temperature"]["max"]     = self.temperature_max
+        result["temperature"]["curr"]    = self.temperature_curr
+
+        result["brightness"] = {}
+        result["brightness"]["default"] = self.brightness_default
+        result["brightness"]["min"]     = self.brightness_min
+        result["brightness"]["max"]     = self.brightness_max
+        result["brightness"]["curr"]    = self.brightness_curr
+
+        result["contrast"] = {}
+        result["contrast"]["default"] = self.contrast_default
+        result["contrast"]["min"]     = self.contrast_min
+        result["contrast"]["max"]     = self.contrast_max
+        result["contrast"]["curr"]    = self.contrast_curr
+
+        result["saturation"] = {}
+        result["saturation"]["default"] = self.saturation_default
+        result["saturation"]["min"]     = self.saturation_min
+        result["saturation"]["max"]     = self.saturation_max
+        result["saturation"]["curr"]    = self.saturation_curr
+
+        result["vibrance"] = {}
+        result["vibrance"]["default"] = self.vibrance_default
+        result["vibrance"]["min"]     = self.vibrance_min
+        result["vibrance"]["max"]     = self.vibrance_max
+        result["vibrance"]["curr"]    = self.vibrance_curr
+
+
+        result["tones"] = {}
+        result["tones"]["default"]         = self.tones_default
+        result["tones"]["min"]             = self.tones_min
+        result["tones"]["max"]             = self.tones_max
+        result["tones"]["shadows_curr"]    = self.shadows_curr
+        result["tones"]["midtones_curr"]   = self.midtones_curr
+        result["tones"]["highlight_curr"]  = self.highlight_curr
+
+
+        result["equalisation"] = {}
+        result["equalisation"]["default"] = self.equalisation_default
+        result["equalisation"]["min"]     = self.equalisation_min
+        result["equalisation"]["max"]     = self.equalisation_max
+        result["equalisation"]["curr"]    = self.equalisation_curr
+
+        result_json = json.dumps(result)
+                                 
+        f = open(file_name, 'w')
+        f.write(result_json)
+
+    def load(self, file_name):
+        print("loading from ", file_name)
+        if os.path.exists(file_name):
+            f = open(file_name)
+            result = json.load(f)
+
+            self.ev_default = float(result["ev"]["default"])
+            self.ev_min     = float(result["ev"]["min"])
+            self.ev_max     = float(result["ev"]["max"])
+            self.ev_curr    = float(result["ev"]["curr"])
+
+            self.temperature_default = float(result["temperature"]["default"])
+            self.temperature_min     = float(result["temperature"]["min"])
+            self.temperature_max     = float(result["temperature"]["max"])
+            self.temperature_curr    = float(result["temperature"]["curr"])
+
+            self.brightness_default = float(result["brightness"]["default"])
+            self.brightness_min     = float(result["brightness"]["min"])
+            self.brightness_max     = float(result["brightness"]["max"])
+            self.brightness_curr    = float(result["brightness"]["curr"])
+            
+            self.contrast_default = float(result["contrast"]["default"])
+            self.contrast_min     = float(result["contrast"]["min"])
+            self.contrast_max     = float(result["contrast"]["max"])
+            self.contrast_curr    = float(result["contrast"]["curr"])
+
+            self.saturation_default = float(result["saturation"]["default"])
+            self.saturation_min     = float(result["saturation"]["min"])
+            self.saturation_max     = float(result["saturation"]["max"])
+            self.saturation_curr    = float(result["saturation"]["curr"])
+
+            self.vibrance_default = float(result["vibrance"]["default"])
+            self.vibrance_min     = float(result["vibrance"]["min"])
+            self.vibrance_max     = float(result["vibrance"]["max"])
+            self.vibrance_curr    = float(result["vibrance"]["curr"])
+            
+            
+            self.tones_default      = float(result["tones"]["default"])
+            self.tones_min          = float(result["tones"]["min"])             
+            self.tones_max          = float(result["tones"]["max"])             
+            self.shadows_curr       = float(result["tones"]["shadows_curr"])
+            self.midtones_curr      = float(result["tones"]["midtones_curr"])
+            self.highlight_curr     = float(result["tones"]["highlight_curr"])
+
+            self.equalisation_default = float(result["equalisation"]["default"])
+            self.equalisation_min     = float(result["equalisation"]["min"])
+            self.equalisation_max     = float(result["equalisation"]["max"])
+            self.equalisation_curr    = float(result["equalisation"]["curr"])
+        

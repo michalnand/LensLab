@@ -90,6 +90,7 @@ class PhotoEditor(QMainWindow):
     def tool_selected(self, current, previous):
         # Update tool options dynamically based on selection
 
+        self.core.save_curr_settings()
         self._clear_layout(self.tool_options_layout)
 
         '''
@@ -293,29 +294,29 @@ class PhotoEditor(QMainWindow):
             
             
             
-            equalization_min, equalization_max, equalization_curr = self.core.get_equalization()
-            equalization_layout = QHBoxLayout()
+            equalisation_min, equalisation_max, equalisation_curr = self.core.get_equalisation()
+            equalisation_layout = QHBoxLayout()
 
             # slider
-            equalization_slider = QSlider(Qt.Horizontal)
-            equalization_slider.setRange(int(n_steps*equalization_min), int(n_steps*equalization_max))
-            equalization_slider.setValue(int(n_steps*equalization_curr))
-            equalization_layout.addWidget(equalization_slider)            
+            equalisation_slider = QSlider(Qt.Horizontal)
+            equalisation_slider.setRange(int(n_steps*equalisation_min), int(n_steps*equalisation_max))
+            equalisation_slider.setValue(int(n_steps*equalisation_curr))
+            equalisation_layout.addWidget(equalisation_slider)            
 
             # button
-            equalization_reset_button = QPushButton("X")
-            equalization_reset_button.setFixedSize(30, 30)
-            equalization_layout.addWidget(equalization_reset_button)  
+            equalisation_reset_button = QPushButton("X")
+            equalisation_reset_button.setFixedSize(30, 30)
+            equalisation_layout.addWidget(equalisation_reset_button)  
 
-            # label
-            equalization_label = QLabel("Equalization " + str(round(equalization_curr, 2)))
+            # label 
+            equalisation_label = QLabel("Equalisation " + str(round(equalisation_curr, 2)))
 
-            self.tool_options_layout.addWidget(equalization_label)   
-            self.tool_options_layout.addLayout(equalization_layout)
+            self.tool_options_layout.addWidget(equalisation_label)   
+            self.tool_options_layout.addLayout(equalisation_layout)
 
             # callbacks
-            equalization_slider.valueChanged.connect(lambda : self.on_equalization_change(equalization_label, equalization_slider, equalization_slider.value()/n_steps))
-            equalization_reset_button.clicked.connect(lambda: self.on_equalization_change(equalization_label, equalization_slider, None))
+            equalisation_slider.valueChanged.connect(lambda : self.on_equalisation_change(equalisation_label, equalisation_slider, equalisation_slider.value()/n_steps))
+            equalisation_reset_button.clicked.connect(lambda: self.on_equalisation_change(equalisation_label, equalisation_slider, None))
 
            
         elif current.text() == "Tones":
@@ -457,6 +458,8 @@ class PhotoEditor(QMainWindow):
         index = self.thumbnails_list.row(item)
 
         self.core.set_curr_idx(index)
+
+        self.core.load_curr_settings()
 
         x    = self.core.get_curr_image()
         hist = self.core.get_curr_histogram()
@@ -615,14 +618,14 @@ class PhotoEditor(QMainWindow):
         self._refresh_image()
 
 
-    def on_equalization_change(self, label, slider, value):
+    def on_equalisation_change(self, label, slider, value):
         if value is not None:
-            self.core.set_equalization(value)
+            self.core.set_equalisation(value)
         else:
-            value = self.core.reset_equalization()
+            value = self.core.reset_equalisation()
             slider.setValue(int(self.n_steps*value))
 
-        label.setText("Equalization " + str(round(value, 2)))
+        label.setText("Equalisation " + str(round(value, 2)))
     
         self._refresh_image()
 

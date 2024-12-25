@@ -18,6 +18,8 @@ class Core:
 
         self.image = Image(self.loader[self.current_idx])
 
+        self.image.load
+
     def get_count(self):
         return len(self.loader)
 
@@ -27,6 +29,16 @@ class Core:
         self.image = Image(self.loader[self.current_idx])
 
         return self.image.get_image()
+    
+   
+
+    def save_curr_settings(self):
+        path, file_name = self._split_file_name(self.current_idx)
+        self.image.save(path + "/" + file_name + ".json")
+
+    def load_curr_settings(self):
+        path, file_name = self._split_file_name(self.current_idx)
+        self.image.load(path + "/" + file_name + ".json")
     
     def get_curr_idx(self):
         return self.current_idx
@@ -89,12 +101,12 @@ class Core:
 
 
 
-    def get_equalization(self):
-        return self.image.get_equalization()
+    def get_equalisation(self):
+        return self.image.get_equalisation()
     
-    def reset_equalization(self):
-        self.image.set_equalization(self.image.equalization_default)
-        return self.image.equalization_default
+    def reset_equalisation(self):
+        self.image.set_equalisation(self.image.equalisation_default)
+        return self.image.equalisation_default
         
     
 
@@ -210,7 +222,14 @@ class Core:
     def set_tones(self, shadows_curr, midtones_curr, highlight_curr):
         self.image.set_tones(shadows_curr, midtones_curr, highlight_curr)
       
-    def set_equalization(self, value):
-        self.image.set_equalization(value)
+    def set_equalisation(self, value):
+        self.image.set_equalisation(value)
 
     
+
+    def _split_file_name(self, idx):
+        image_file_name = self.loader.get_name(idx)
+        path, file_name = image_file_name.rsplit("/", 1)
+        file_name       = file_name.rsplit(".", 1)[0]
+
+        return path, file_name
