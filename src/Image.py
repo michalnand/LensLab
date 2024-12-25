@@ -10,7 +10,9 @@ class Image:
     def __init__(self, image_full):
         self.image_orig = image_full.copy()
 
-        self.image_orig_small   = cv2.resize(self.image_orig, (self.image_orig.shape[1]//8, self.image_orig.shape[0]//8))
+        self.scale_ratio = 8
+
+        self.image_orig_small   = cv2.resize(self.image_orig, (self.image_orig.shape[1]//self.scale_ratio, self.image_orig.shape[0]//self.scale_ratio))
         self.image_curr         = self.image_orig_small.copy()
 
         self.update_histogram()
@@ -70,14 +72,15 @@ class Image:
         self.crop_default   = 0
         self.crop_curr      = 0
 
-        self.crop_left      = 0.0
-        self.crop_right     = 1.0
-        self.crop_top       = 0.0
-        self.crop_bottom    = 1.0
-
+       
         self.crop_enabled   = False
 
-        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+        self.crop_left, self.crop_right, self.crop_top, self.crop_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+
+
+        self.crop_x = (self.crop_right  - self.crop_left)//2
+        self.crop_y = (self.crop_bottom - self.crop_top)//2
+
 
 
     def get_image(self):
@@ -170,22 +173,20 @@ class Image:
                 self.crop_curr = i
                 break
 
-        self.crop_left      = 0.0
-        self.crop_right     = 1.0
-        self.crop_top       = 0.0
-        self.crop_bottom    = 1.0
+        self.crop_left, self.crop_right, self.crop_top, self.crop_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+        self.crop_x = (self.crop_right  - self.crop_left)//2
+        self.crop_y = (self.crop_bottom - self.crop_top)//2
 
-        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
         self.image_curr = self._plot_crop_rectangle(self.image_processed.copy())
        
 
-    def _plot_crop_rectangle(self, img):
-        result = cv2.line(img, (self.rect_left, self.rect_top), (self.rect_right, self.rect_top), (0, 1, 0), 2)
-        result = cv2.line(result, (self.rect_left, self.rect_bottom), (self.rect_right, self.rect_bottom), (0, 1, 0), 2)
-        result = cv2.line(result, (self.rect_left, self.rect_top), (self.rect_left, self.rect_bottom), (0, 1, 0), 2)
-        result = cv2.line(result, (self.rect_right, self.rect_top), (self.rect_right, self.rect_bottom), (0, 1, 0), 2)
+    def _plot_crop_rectangle(self, img):    
+        result = cv2.line(img, (self.crop_left, self.crop_top), (self.crop_right, self.crop_top), (0, 1, 0), 2)
+        result = cv2.line(result, (self.crop_left, self.crop_bottom), (self.crop_right, self.crop_bottom), (0, 1, 0), 2)
+        result = cv2.line(result, (self.crop_left, self.crop_top), (self.crop_left, self.crop_bottom), (0, 1, 0), 2)
+        result = cv2.line(result, (self.crop_right, self.crop_top), (self.crop_right, self.crop_bottom), (0, 1, 0), 2)
 
-        result[self.rect_top:self.rect_bottom, self.rect_left:self.rect_right, :]*= 5.0
+        result[self.crop_top:self.crop_bottom, self.crop_left:self.crop_right, :]*= 5.0
         result/= 5.0
 
         return result
@@ -252,8 +253,6 @@ class Image:
         rect_bottom  = int(numpy.clip(rect_bottom, 0, height-1))
         rect_top     = int(numpy.clip(rect_top,    0, height-1))
 
-        print(">>> ", rect_left, rect_right, rect_top, rect_bottom)
-
         return rect_left, rect_right, rect_top, rect_bottom
 
 
@@ -263,21 +262,21 @@ class Image:
             return
         
 
-        print("crop_enabled     ", self.crop_enabled)
-        print("set_crop_event   ", x, y, mouse_click)
-        print("state            ", self.crop_modes[self.crop_curr], self.crop_ratio_x[self.crop_curr], self.crop_ratio_y[self.crop_curr])
-        print("\n\n")
-
         center_x = self.image_curr.shape[1]*x 
         center_y = self.image_curr.shape[0]*y
 
-        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0], center_x, center_y)
+        self.crop_left, self.crop_right, self.crop_top, self.crop_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0], center_x, center_y)
+
+        self.crop_x = (self.crop_right  - self.crop_left)//2
+        self.crop_y = (self.crop_bottom - self.crop_top)//2
+
         self.image_curr = self._plot_crop_rectangle(self.image_processed.copy())
        
 
     def update(self):
-        self.rect_left, self.rect_right, self.rect_top, self.rect_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
+        self.crop_left, self.crop_right, self.crop_top, self.crop_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0], self.crop_x, self.crop_y)
 
+        
         x = self.image_orig_small.copy()
         self.image_processed = self._update(x)
         self.image_curr      = self._plot_crop_rectangle(self.image_processed.copy())
@@ -307,6 +306,15 @@ class Image:
         print("exporting to ", file_name)
         x = self.image_orig.copy()
         result = self._update(x)
+
+
+        crop_left   = int(numpy.clip(self.crop_left*self.scale_ratio, 0, x.shape[1]))
+        crop_right  = int(numpy.clip(self.crop_right*self.scale_ratio, 0, x.shape[1]))
+        crop_top    = int(numpy.clip(self.crop_top*self.scale_ratio, 0, x.shape[0]))
+        crop_bottom = int(numpy.clip(self.crop_bottom*self.scale_ratio, 0, x.shape[0]))
+
+        result = result[crop_top:crop_bottom, crop_left:crop_right, :]
+
 
         result = numpy.array(result*255, dtype=numpy.uint8)
         if extension == "jpg":
@@ -430,6 +438,8 @@ class Image:
         result["crop"]["right"]     = self.crop_right
         result["crop"]["top"]       = self.crop_top
         result["crop"]["bottom"]    = self.crop_bottom
+        result["crop"]["x"]         = self.crop_x
+        result["crop"]["y"]         = self.crop_y
         
         result_json = json.dumps(result)
                                  
@@ -488,9 +498,12 @@ class Image:
             self.crop_default   = int(result["crop"]["default"])
             self.crop_curr      = int(result["crop"]["curr"])
 
-            self.crop_left      = float(result["crop"]["left"])
-            self.crop_right     = float(result["crop"]["right"])
-            self.crop_top       = float(result["crop"]["top"])
-            self.crop_bottom    = float(result["crop"]["bottom"])
+            self.crop_left      = int(result["crop"]["left"])
+            self.crop_right     = int(result["crop"]["right"])
+            self.crop_top       = int(result["crop"]["top"])
+            self.crop_bottom    = int(result["crop"]["bottom"])
+
+            self.crop_x         = int(result["crop"]["x"])      
+            self.crop_y         = int(result["crop"]["y"])     
 
 

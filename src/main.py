@@ -36,26 +36,23 @@ class SceneEventFilter(QObject):
                 scene_pos = event.scenePos()
                 x, y = self._compute_relative_pos(scene_pos)              
                 self.core.image.set_crop_event(x, y, True)
-                #self.refresh_func()
+                self.refresh_func()
 
-                QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMousePress)
                 
             return True
         elif event.type() == QEvent.GraphicsSceneMouseRelease:
             if event.button() == Qt.LeftButton:                
                 scene_pos = event.scenePos()
-                x, y = self._compute_relative_pos(scene_pos)  
+                #x, y = self._compute_relative_pos(scene_pos)  
 
-                QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMouseRelease)            
 
             return True
         elif event.type() == QEvent.GraphicsSceneMouseMove:            
             scene_pos = event.scenePos()
-            x, y = self._compute_relative_pos(scene_pos)              
-            self.core.image.set_crop_event(x, y, False)
+            #x, y = self._compute_relative_pos(scene_pos)              
+            #self.core.image.set_crop_event(x, y, False)
             #self.refresh_func()
 
-            QCoreApplication.removePostedEvents(self, QEvent.GraphicsSceneMouseMove)
             
             return True
         
