@@ -3,6 +3,8 @@ from Image       import *
 
 from Bracketing  import *
 
+import time
+
 class Core:
 
     def __init__(self, tw = 100, th = 100):
@@ -45,9 +47,8 @@ class Core:
         self.image.update() 
 
 
-    def export_curr(self, extension = None):
+    def export_curr(self, extension = None, quality = 99):
         path, file_name = self._split_file_name(self.current_idx)
-
         path = path + "/LensLabExported/"
 
         if os.path.exists(path) != True:
@@ -57,7 +58,42 @@ class Core:
             extension = "jpg"
 
         self.save_curr_settings()
-        self.image.export(path + file_name, extension)
+        self.image.export(path + file_name, extension, quality)
+
+    def export_time_lapse(self, fps=25, quality = 99):
+        print("export time lapse in ", fps, " fps")
+
+        path, _ = self._split_file_name(self.current_idx)
+        file_name = path + "/LensLabExported/time_lapse.mp4"
+
+        x = self.image.process_full_resolution(self.loader[0])
+        height = x.shape[0]
+        width  = x.shape[1]
+
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        #fourcc = cv2.VideoWriter_fourcc(*'H264')
+        writer = cv2.VideoWriter(file_name, fourcc, fps, (width, height))
+
+        photos_count = len(self.loader)
+        for n in range(photos_count):
+            time_start = time.time()
+
+            y = self.image.process_full_resolution(self.loader[n])
+
+            if y.shape[0] == height and y.shape[1] == width:
+                image = numpy.clip(255*y, 0, 255).astype(numpy.uint8)
+                writer.write(image)
+
+            time_stop = time.time()
+
+            eta = (time_stop - time_start)*(photos_count - n)
+            eta = round(eta/60.0, 1)
+            print("processing image ", n, " from ", photos_count, " eta ", eta, " min")
+
+        writer.release()
+
+        print("done\n")
+
     
     def get_curr_idx(self):
         return self.current_idx

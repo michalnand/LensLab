@@ -10,7 +10,7 @@ class Image:
     def __init__(self, image_full):
         self.image_orig = image_full.copy()
 
-        self.scale_ratio = 8
+        self.scale_ratio = 4
 
         self.image_orig_small   = cv2.resize(self.image_orig, (self.image_orig.shape[1]//self.scale_ratio, self.image_orig.shape[0]//self.scale_ratio))
         self.image_curr         = self.image_orig_small.copy()
@@ -81,7 +81,10 @@ class Image:
         self.crop_x = (self.crop_right  - self.crop_left)//2
         self.crop_y = (self.crop_bottom - self.crop_top)//2
 
-
+    def set_image(self, img):
+        self.image_orig = img.copy()
+        self.image_orig_small   = cv2.resize(self.image_orig, (self.image_orig.shape[1]//self.scale_ratio, self.image_orig.shape[0]//self.scale_ratio))
+        self.image_curr         = self.image_orig_small.copy()
 
     def get_image(self):
         return self.image_curr
@@ -301,12 +304,8 @@ class Image:
         self.update()
 
 
-
-    def export(self, file_name, extension):
-        print("exporting to ", file_name)
-        x = self.image_orig.copy()
-        result = self._update(x)
-
+    def process_full_resolution(self, x):
+        result = self._update(x.copy())
 
         crop_left   = int(numpy.clip(self.crop_left*self.scale_ratio, 0, x.shape[1]))
         crop_right  = int(numpy.clip(self.crop_right*self.scale_ratio, 0, x.shape[1]))
@@ -315,10 +314,16 @@ class Image:
 
         result = result[crop_top:crop_bottom, crop_left:crop_right, :]
 
+        return result
+
+    def export(self, file_name, extension, quality = 99):
+        print("exporting to ", file_name)
+        
+        result = self.process_full_resolution(self.image_orig)
 
         result = numpy.array(result*255, dtype=numpy.uint8)
         if extension == "jpg":
-            cv2.imwrite(file_name + ".jpg", result, [int(cv2.IMWRITE_JPEG_QUALITY), 99])
+            cv2.imwrite(file_name + ".jpg", result, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
         else:
             cv2.imwrite(file_name + ".png", result)
 

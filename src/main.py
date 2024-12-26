@@ -229,19 +229,21 @@ class PhotoEditor(QMainWindow):
     def _make_export_layout(self):
         layout = QVBoxLayout()
 
-        quality_label = QLabel("quality")
+        quality_label = QLabel("Quality 98")
 
-        font = QFont()
-        font.setPointSize(20)
-        quality_label.setFont(font)
+        #font = QFont()
+        #font.setPointSize(20)
+        #quality_label.setFont(font)
 
         layout.addWidget(quality_label)   
 
 
         quality_slider = QSlider(Qt.Horizontal)
-        quality_slider.setRange(int(0), int(100))
+        quality_slider.setRange(int(5), int(100))
         quality_slider.setValue(int(98))
         layout.addWidget(quality_slider)   
+
+        quality_slider.valueChanged.connect(lambda : self.on_quality_change(quality_slider, quality_label))
 
         spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
         layout.addSpacerItem(spacer)
@@ -249,20 +251,38 @@ class PhotoEditor(QMainWindow):
 
         button_jpg = QPushButton("Export image JPG")
         layout.addWidget(button_jpg)
-        button_jpg.clicked.connect(lambda: self.on_export_image_button("jpg"))
+        button_jpg.clicked.connect(lambda: self.on_export_image_button("jpg", quality_slider.value()))
 
         button_png = QPushButton("Export image PNG")    
         layout.addWidget(button_png)
-        button_png.clicked.connect(lambda: self.on_export_image_button("png"))
+        button_png.clicked.connect(lambda: self.on_export_image_button("png", quality_slider.value()))
 
         spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
         layout.addSpacerItem(spacer)
 
+
+        timelapse_label = QLabel("Timelapse")
+
+        font = QFont()
+        font.setPointSize(20)
+        timelapse_label.setFont(font)
+
+        layout.addWidget(timelapse_label) 
+
+
+        fps_label = QLabel("FPS 25")
+        layout.addWidget(fps_label) 
+
+        fps_slider = QSlider(Qt.Horizontal)
+        fps_slider.setRange(int(10), int(60))
+        fps_slider.setValue(int(25))
+        layout.addWidget(fps_slider) 
+
+        fps_slider.valueChanged.connect(lambda : self.on_fps_change(fps_slider, fps_label))
+
         button_timelapse = QPushButton("Export timelapse")
         layout.addWidget(button_timelapse)
-
-        #TODO
-        #button_jpg.clicked.connect(lambda: self.on_export_timelapse_button())
+        button_timelapse.clicked.connect(lambda: self.on_export_timelapse_button(fps_slider.value(), quality_slider.value()))
 
 
         layout.addStretch()
@@ -675,7 +695,6 @@ class PhotoEditor(QMainWindow):
 
     def load_images(self, folder):
         
-
         print("loading images from ", folder)
         self.core.load_folder(folder)
         
@@ -923,14 +942,25 @@ class PhotoEditor(QMainWindow):
         label.setText("Equalisation " + str(round(value, 2)))
     
         self.refresh_image()
+    
+    def on_quality_change(self, slider, label):
+        quality  = slider.value()
+        label.setText("Quality " + str(int(quality)))
 
-    def on_export_image_button(self, extension):
-        self.core.export_curr(extension)
+    def on_export_image_button(self, extension, quality):
+        self.core.export_curr(extension, quality)
+
+    def on_fps_change(self, slider, label):
+        fps  = slider.value()
+        label.setText("FPS " + str(int(fps)))
+
+    def on_export_timelapse_button(self, fps, quality):
+        self.core.export_time_lapse(fps, quality)
 
     def on_aspect_ratio_selected(self, current, previous):
         self.core.image.set_crop_aspect_ratio(current.text())
         self.refresh_image()
-
+    
 
     
 
