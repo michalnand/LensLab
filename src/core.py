@@ -9,10 +9,15 @@ class Core:
         self.tw = tw
         self.th = th
 
+    def is_loaded(self):
+        if hasattr(self, "loader"):
+            return True
+        else:
+            return False
         
     def load_folder(self, path):    
         self.loader     = ImageLoader(path + "/")
-        self.thumbnails = self.loader.load_thumbnails(self.tw, self.th)
+        self.loader.load_thumbnails(self.tw, self.th)
 
         self.current_idx= 0
 
@@ -204,12 +209,23 @@ class Core:
             result = bracketing(photos)
         else:
             result = self.get_curr_image().copy()
-            print("unknown stacking : ",stacking_type )
+            print("unknown stacking : ", stacking_type)
 
 
-        self.image = Image(result)
+        curr_name = self.loader.get_name(self.get_curr_idx())
 
-        print("stacking done")  
+        curr_name_prefix, curr_name_ext = curr_name.rsplit(".", 1)        
+
+        result_name = curr_name_prefix + "_stacked_" + stacking_type + "." + curr_name_ext
+
+        print("saving stacked image as : ", result_name)
+        
+        result_tmp = numpy.array(result*255, dtype=numpy.uint8)
+        cv2.imwrite(result_name, result_tmp, [int(cv2.IMWRITE_JPEG_QUALITY), 99])
+        
+        self.loader.add_new(result_name)
+
+        print("stacking done\n\n")  
 
     def set_default(self):
         self.image.set_default()

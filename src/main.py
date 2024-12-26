@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QListWidget,
-    QSlider, QPushButton, QGraphicsView, QGraphicsScene, QFileDialog, QListWidgetItem)
+    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QListWidget, QSpacerItem, QSizePolicy,
+    QSlider, QPushButton, QGraphicsView, QGraphicsScene, QFileDialog, QListWidgetItem, QTabWidget)
 from PyQt5.QtCore import Qt, QSize, QEvent, QObject, QCoreApplication
 from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QFont, QCursor
 import pyqtgraph as pg
@@ -84,8 +84,247 @@ class SceneEventFilter(QObject):
         return x, y
 
 class PhotoEditor(QMainWindow):
+
+
+
+    def _make_photo_thumbnails_layout(self):
+        layout = QVBoxLayout()
+         
+        # Photo viewer (central)
+        self.photo_view = QGraphicsView()
+        self.photo_scene = QGraphicsScene()
+        self.photo_view.setScene(self.photo_scene)
+        
+        layout.addWidget(self.photo_view, stretch = 5)
+
+
+        # Thumbnails list
+        self.thumbnails_list = QListWidget()
+        self.thumbnails_list.setViewMode(QListWidget.IconMode)
+        self.thumbnails_list.setIconSize(QSize(100, 100))
+        self.thumbnails_list.itemClicked.connect(self.thumbnail_clicked)
+
+        layout.addWidget(self.thumbnails_list, stretch=1)
+
+
+        return layout
+    
+
+    def _make_tool_box_layout(self):
+        # Right-side layout
+        layout = QVBoxLayout()
+
+        # Histogram section
+        self.histogram_widget = pg.PlotWidget()
+        self.histogram_widget.setTitle("Histogram")
+        self.histogram_widget.setLabel("left", "Frequency")
+        self.histogram_widget.setLabel("bottom", "Pixel Intensity")
+        layout.addWidget(self.histogram_widget, stretch=1)
+
+        # Tool selection list
+        self.tool_list = QListWidget()
+        font = QFont()
+        font.setPointSize(20)
+        
+        self.tool_list.setFont(font)
+
+        self.tool_list.addItems(["Exposure", "Brightness and Contrast", "Colors", "Tones", "Crop"])
+        self.tool_list.currentItemChanged.connect(self.tool_selected)   
+        layout.addWidget(self.tool_list, stretch=1)
+
+        # Tool options 
+        self.tool_options_layout = QVBoxLayout()
+        self.tool_options_container = QWidget()
+        self.tool_options_container.setLayout(self.tool_options_layout)
+        layout.addWidget(self.tool_options_container, stretch=2)
+
+
+        # split preview button
+        split_preview_button = QPushButton("Split Preview")
+
+        layout.addWidget(split_preview_button)
+        split_preview_button.clicked.connect(self.on_split_preview_click)
+
+        return layout
+
+
+    def _make_stacking_layout(self):
+        layout = QVBoxLayout()
+
+
+        stacking_label = QLabel("Stacking Options")
+
+        font = QFont()
+        font.setPointSize(20)
+        stacking_label.setFont(font)
+
+        layout.addWidget(stacking_label)
+
+        list_widget = QListWidget()
+        list_widget.addItems(["mean", "max", "min", "median", "bracketing"])
+        list_widget.setCurrentRow(0)
+
+        # Tool selection list
+        font = QFont()
+        font.setPointSize(20)
+        
+        list_widget.setFont(font)
+
+        layout.addWidget(list_widget)
+
+        spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        layout.addSpacerItem(spacer)
+        
+
+        slider = QSlider(Qt.Horizontal) 
+        if self.core.is_loaded():
+            slider.setRange(1, self.core.get_count() - self.core.get_curr_idx())
+            slider.setValue(1)  
+        else:
+            slider.setRange(1, 2)
+            slider.setValue(1)  
+        label = QLabel("Photos count : 1")
+        layout.addWidget(label)
+        layout.addWidget(slider)
+
+        button = QPushButton("Apply Stacking")
+        layout.addWidget(button)
+
+        slider.valueChanged.connect(lambda value: label.setText("Photos count : " + str(value)))
+
+        spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        layout.addSpacerItem(spacer)
+        
+        button.clicked.connect(lambda: self.on_stacking_click(list_widget, slider))
+
+        layout.addStretch()
+
+        return layout
+
+    def _make_ai_layout(self):
+        layout = QVBoxLayout()
+
+        ai_label = QLabel("AI tools")
+
+        font = QFont()
+        font.setPointSize(20)
+        ai_label.setFont(font)
+
+        layout.addWidget(ai_label) 
+
+        spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        layout.addSpacerItem(spacer)
+
+        button_smart_histogram = QPushButton("Smart Histogram")
+        layout.addWidget(button_smart_histogram)
+        button_night_photo = QPushButton("Night Photo")
+        layout.addWidget(button_night_photo)
+  
+
+        layout.addStretch()
+
+        return layout
+    
+
+    def _make_export_layout(self):
+        layout = QVBoxLayout()
+
+        quality_label = QLabel("quality")
+
+        font = QFont()
+        font.setPointSize(20)
+        quality_label.setFont(font)
+
+        layout.addWidget(quality_label)   
+
+
+        quality_slider = QSlider(Qt.Horizontal)
+        quality_slider.setRange(int(0), int(100))
+        quality_slider.setValue(int(98))
+        layout.addWidget(quality_slider)   
+
+        spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        layout.addSpacerItem(spacer)
+        
+
+        button_jpg = QPushButton("Export image JPG")
+        layout.addWidget(button_jpg)
+        button_jpg.clicked.connect(lambda: self.on_export_image_button("jpg"))
+
+        button_png = QPushButton("Export image PNG")    
+        layout.addWidget(button_png)
+        button_png.clicked.connect(lambda: self.on_export_image_button("png"))
+
+        spacer = QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        layout.addSpacerItem(spacer)
+
+        button_timelapse = QPushButton("Export timelapse")
+        layout.addWidget(button_timelapse)
+
+        #TODO
+        #button_jpg.clicked.connect(lambda: self.on_export_timelapse_button())
+
+
+        layout.addStretch()
+
+        return layout
+    
+    def _create_right_panel(self):
+        if self.tool_box_layout is not None:
+            self._clear_layout(self.tool_box_layout)
+
+        if self.stacking_layout is not None:
+            self._clear_layout(self.stacking_layout)
+
+        if self.ai_layout is not None:
+            self._clear_layout(self.ai_layout)
+
+        if self.export_layout is not None:
+            self._clear_layout(self.export_layout)
+
+        if self.right_panel_tabs is not None:
+            self.right_panel_tabs.clear()
+            self.main_content_layout.removeWidget(self.right_panel_tabs)
+
+
+        # right panel options
+        self.tool_box_layout = self._make_tool_box_layout()
+        self.stacking_layout = self._make_stacking_layout()
+        self.ai_layout       = self._make_ai_layout()
+        self.export_layout   = self._make_export_layout()
+
+        self.right_panel_tabs = QTabWidget()
+
+        self.right_panel_tabs.setStyleSheet("QTabBar::tab { font-size: 16px; }")
+
+        # Add tabs
+        self.right_panel_tabs.addTab(self._wrap_layout_in_widget(self.tool_box_layout), "Tools")
+        self.right_panel_tabs.addTab(self._wrap_layout_in_widget(self.stacking_layout), "Stacking")
+        self.right_panel_tabs.addTab(self._wrap_layout_in_widget(self.ai_layout), "AI")
+        self.right_panel_tabs.addTab(self._wrap_layout_in_widget(self.export_layout), "Export")
+
+        return self.right_panel_tabs
+
+    
+    def _wrap_layout_in_widget(self, layout):
+        widget = QWidget()
+        widget.setLayout(layout)
+        return widget
+
     def __init__(self):
         super().__init__()
+        
+        self.core = Core()
+
+
+        self.tool_box_layout    = None
+        self.stacking_layout    = None
+        self.ai_layout          = None
+        self.export_layout      = None
+        self.right_panel_tabs   = None
+
+        
+
         self.setWindowTitle("Lens Lab")
         self.setGeometry(100, 100, 1800, 900)
 
@@ -99,66 +338,17 @@ class PhotoEditor(QMainWindow):
         self.main_layout = QVBoxLayout(self.central_widget)
         self.main_content_layout = QHBoxLayout()
 
-        # layout for photo view and thumbnails
-        self.photo_thumbnails_layout = QVBoxLayout()
+        self.photo_panel_layout = self._make_photo_thumbnails_layout()
 
-        # Photo viewer (central)
-        self.photo_view = QGraphicsView()
-        self.photo_scene = QGraphicsScene()
-        self.photo_view.setScene(self.photo_scene)
+        self.main_content_layout.addLayout(self.photo_panel_layout, stretch=15)
 
-
-        self.photo_thumbnails_layout.addWidget(self.photo_view, stretch=5)
+        self._create_right_panel()
+  
+        self.main_content_layout.addWidget(self.right_panel_tabs, stretch=5)
 
 
-        self.thumbnails_list = QListWidget()
-        self.thumbnails_list.setViewMode(QListWidget.IconMode)
-        self.thumbnails_list.setIconSize(QSize(100, 100))
-        self.thumbnails_list.itemClicked.connect(self.thumbnail_clicked)
-
-        self.photo_thumbnails_layout.addWidget(self.thumbnails_list, stretch=1)
-
-
-
-        self.main_content_layout.addLayout(self.photo_thumbnails_layout, stretch=5)
-
-        # Right-side layout
-        self.right_layout = QVBoxLayout()
-
-        # Histogram section
-        self.histogram_widget = pg.PlotWidget()
-        self.histogram_widget.setTitle("Histogram")
-        self.histogram_widget.setLabel("left", "Frequency")
-        self.histogram_widget.setLabel("bottom", "Pixel Intensity")
-        self.right_layout.addWidget(self.histogram_widget, stretch=1)
-
-        # Tool selection list
-        self.tool_list = QListWidget()
-        font = QFont()
-        font.setPointSize(16)
-        self.tool_list.setFont(font)
-
-        self.tool_list.addItems(["Stacking", "Exposure", "Brightness and Contrast", "Colors", "Tones", "Crop", "Export"])
-        self.tool_list.currentItemChanged.connect(self.tool_selected)   
-        self.right_layout.addWidget(self.tool_list, stretch=1)
-
-        # Tool options (customizable area)
-        self.tool_options_layout = QVBoxLayout()
-        self.tool_options_container = QWidget()
-        self.tool_options_container.setLayout(self.tool_options_layout)
-        self.right_layout.addWidget(self.tool_options_container, stretch=2)
-
-
-        # split preview button
-        split_preview_button = QPushButton("Split preview")
-
-        self.right_layout.addWidget(split_preview_button)
-        split_preview_button.clicked.connect(self.on_split_preview_click)
-
-
-        self.main_content_layout.addLayout(self.right_layout, stretch=2)
         self.main_layout.addLayout(self.main_content_layout, stretch=5)
-
+        
 
         # Menu setup
         self.menu = self.menuBar()
@@ -166,20 +356,6 @@ class PhotoEditor(QMainWindow):
 
         open_folder_action = file_menu.addAction("Open Folder")
         open_folder_action.triggered.connect(self.open_folder)
-
-        open_image_action = file_menu.addAction("Open Image")
-        open_image_action.triggered.connect(self.open_image)
-
-        export_image_action = file_menu.addAction("Export Image")
-        export_image_action.triggered.connect(self.export_image)
-
-        export_folder_action = file_menu.addAction("Export Folder")
-        export_folder_action.triggered.connect(self.export_folder)
-
-        export_timelapse_action = file_menu.addAction("Export Timelapse")
-        export_timelapse_action.triggered.connect(self.export_timelapse)
-
-        self.core = Core()
 
 
         # mouse event handling
@@ -199,30 +375,8 @@ class PhotoEditor(QMainWindow):
         
         n_steps = self.n_steps
 
-        if current.text() == "Stacking":
-
-            list_widget = QListWidget()
-            list_widget.addItems(["mean", "max", "min", "median", "bracketing"])
-            list_widget.setCurrentRow(0)
-            self.tool_options_layout.addWidget(list_widget)
-
-            slider = QSlider(Qt.Horizontal) 
-            slider.setRange(1, self.core.get_count() - self.core.get_curr_idx())
-            slider.setValue(1)  
-            label = QLabel("Photos count : 1")
-            self.tool_options_layout.addWidget(label)
-            self.tool_options_layout.addWidget(slider)
-
-            button = QPushButton("Apply Stacking")
-            self.tool_options_layout.addWidget(button)
-
-            slider.valueChanged.connect(lambda value: label.setText("Photos count : " + str(value)))
-
-            button.clicked.connect(lambda: self.on_stacking_click(list_widget, slider))
-
-        
        
-        elif current.text() == "Exposure":
+        if current.text() == "Exposure":
         
             ev_min, ev_max, ev_curr = self.core.get_ev()
 
@@ -332,9 +486,6 @@ class PhotoEditor(QMainWindow):
         
 
         elif current.text() == "Colors":
-
-
-
 
             saturation_min, saturation_max, saturation_curr = self.core.get_saturation()
             saturation_layout = QHBoxLayout()
@@ -515,17 +666,6 @@ class PhotoEditor(QMainWindow):
             aspect_ratio_list.setCurrentRow(self.core.image.crop_curr)
 
             
-
-        # image export, or time-lapse export
-        elif current.text() == "Export":
-            button_jpg = QPushButton("Export image JPG")
-            self.tool_options_layout.addWidget(button_jpg)
-            button_jpg.clicked.connect(lambda: self.on_export_image_button("jpg"))
-
-            button_png = QPushButton("Export image PNG")    
-            self.tool_options_layout.addWidget(button_png)
-            button_png.clicked.connect(lambda: self.on_export_image_button("png"))
-
         self.tool_options_layout.addStretch()
 
     def open_folder(self):
@@ -533,30 +673,33 @@ class PhotoEditor(QMainWindow):
         if folder:
             self.load_images(folder)
 
-    def open_image(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "Images (*.png *.jpg *.jpeg *.bmp)")
-        if file:
-            self.display_image(file)
-
-    def export_image(self):
-        QFileDialog.getSaveFileName(self, "Export Image", "", "Images (*.png *.jpg *.jpeg *.bmp)")
-
-    def export_folder(self):
-        QFileDialog.getExistingDirectory(self, "Export Folder")
-
-    def export_timelapse(self):
-        QFileDialog.getSaveFileName(self, "Export Timelapse", "", "Videos (*.mp4 *.avi)")
-
     def load_images(self, folder):
-        self._clear_layout(self.tool_options_layout)
+        
 
         print("loading images from ", folder)
         self.core.load_folder(folder)
         
+
+        self._refresh()
+
+    def _refresh(self, idx = -1):
+        # select current    
+        if idx != -1:
+            self.core.set_curr_idx(idx)
+        else:
+            self.core.set_curr_idx(0)
+            idx = 0
+
+        self.core.load_curr_settings()
+
+
+        # clear and update thumbnails
         self.thumbnails_list.clear()
 
-        for n in range(len(self.core.thumbnails)):
-            x = self.core.thumbnails[n]
+        print("\n\nthumnails count ", len(self.core.loader.thumbnails), "\n\n")
+
+        for n in range(len(self.core.loader.thumbnails)):
+            x = self.core.loader.thumbnails[n]
             
             pixmap = self._numpy_to_qpixmap(x)
             
@@ -566,13 +709,22 @@ class PhotoEditor(QMainWindow):
             item.setIcon(icon)
             self.thumbnails_list.addItem(item)
 
-        self.core.set_curr_idx(0)
-        self.core.load_curr_settings()
-        self.thumbnail_clicked(self.thumbnails_list.item(0))
+        
+        self._create_right_panel()
+
+        
+
+        self.main_content_layout.addWidget(self.right_panel_tabs, stretch=5)
+        
+        self.thumbnail_clicked(self.thumbnails_list.item(idx))
+        self._clear_layout(self.tool_options_layout)
+
+
+       
+
+    
 
     def thumbnail_clicked(self, item):
-        self.tool_list.setCurrentRow(0)
-        self.tool_list.setCurrentRow(1)
         self.core.save_curr_settings()
 
         self._clear_layout(self.tool_options_layout)
@@ -654,7 +806,7 @@ class PhotoEditor(QMainWindow):
         qimage = QImage(x_tmp.data, width, height, bytes_per_line, QImage.Format_BGR888)
         return QPixmap.fromImage(qimage)    
 
-           
+   
 
     def on_split_preview_click(self):
         self.core.split_preview_toogle()
@@ -667,9 +819,11 @@ class PhotoEditor(QMainWindow):
 
         stacking_type = list_widget.item(row_idx).text()
 
+        print("count before add : ", self.core.get_count())
         self.core.stacking(stacking_type, photos_count)
+        self.core.set_curr_idx(self.core.get_count()-1)
 
-        self.refresh_image()
+        self._refresh(self.core.get_count()-1)
     
     def on_ev_change(self, label, slider, value):
         if value is not None:

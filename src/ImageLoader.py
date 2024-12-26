@@ -30,9 +30,9 @@ class ImageLoader:
 
     def add_new(self, file_name):
         if self._check_file_name(file_name):
-            self.files_list.append(self.root_path + "/" + file_name)
+            self.files_list.append(file_name)
 
-            x = self._load_thumbnail(self.files_list, self.thumbnails[0].shape[0], self.thumbnails[0].shape[1])
+            x = self._load_thumbnail(len(self.files_list) - 1, self.thumbnails[0].shape[0], self.thumbnails[0].shape[1])
             x = numpy.expand_dims(x, 0)
             self.thumbnails = numpy.vstack([self.thumbnails, x])
 
