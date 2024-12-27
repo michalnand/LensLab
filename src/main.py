@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5.QtWidgets import (QFileDialog)
+from PyQt5.QtWidgets import (QFileDialog, QWidget)
 
 from Core       import *
 from PhotoView  import *
@@ -36,6 +36,12 @@ class LensLabApp(QMainWindow):
         # tool panel
         self.tool_widget = Tools(self.core)
         self.main_tabs.add("Tools", self.tool_widget.get())
+
+        #self.stacking_widget = Stacking(self.core)
+        #self.main_tabs.add("Stacking", self.stacking_widget.get())
+
+        self.stacking_widget = QWidget()
+        self.main_tabs.add("Stacking", self.stacking_widget)
 
         self.export_widget = Export(self.core)
         self.main_tabs.add("Export", self.export_widget.get())
