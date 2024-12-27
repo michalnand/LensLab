@@ -62,6 +62,22 @@ class Image:
         self.equalisation_max = 1.0
         self.equalisation_curr= 0.0
 
+
+        self.blur_default     = 0.0
+        self.blur_min         = 0.0
+        self.blur_max         = 1.0
+        self.blur_curr        = 0.0
+
+        self.sharpen_default     = 0.0
+        self.sharpen_min         = 0.0
+        self.sharpen_max         = 1.0
+        self.sharpen_curr        = 0.0
+
+        self.bilateral_default     = 0.0
+        self.bilateral_min         = 0.0
+        self.bilateral_max         = 1.0
+        self.bilateral_curr        = 0.0
+
         self.split_preview = 0
 
    
@@ -73,8 +89,6 @@ class Image:
         self.crop_curr      = 0
 
        
-        self.crop_enabled   = False
-
         self.crop_left, self.crop_right, self.crop_top, self.crop_bottom = self._get_crop_rectangle(self.image_orig_small.shape[1], self.image_orig_small.shape[0])
 
 
@@ -115,6 +129,15 @@ class Image:
     
     def get_equalisation(self):
         return self.equalisation_min, self.equalisation_max, self.equalisation_curr 
+    
+    def get_blur(self):
+        return self.blur_min, self.blur_max, self.blur_curr 
+    
+    def get_sharpen(self):
+        return self.sharpen_min, self.sharpen_max, self.sharpen_curr 
+    
+    def get_bilateral(self):
+        return self.bilateral_min, self.bilateral_max, self.bilateral_curr 
     
 
     
@@ -159,16 +182,22 @@ class Image:
 
     def set_equalisation(self, value):
         self.equalisation_curr = value
+        self.update() 
+
+    def set_blur(self, value):
+        self.blur_curr = value
         self.update()  
 
-    def set_crop_enabled(self):
-        self.crop_enabled = True
+    def set_sharpen(self, value):
+        self.sharpen_curr = value
+        self.update()  
 
-    def set_crop_disabled(self):
-        self.crop_enabled = False   
+    def set_bilateral(self, value):
+        self.bilateral_curr = value
+        self.update()  
+
 
     def set_crop_aspect_ratio(self, mode_name):
-        self.set_crop_enabled()
         self.crop_curr = self.crop_default
 
         for i in range(len(self.crop_modes)):
@@ -184,10 +213,10 @@ class Image:
        
 
     def _plot_crop_rectangle(self, img):    
-        result = cv2.line(img, (self.crop_left, self.crop_top), (self.crop_right, self.crop_top), (0, 1, 0), 2)
-        result = cv2.line(result, (self.crop_left, self.crop_bottom), (self.crop_right, self.crop_bottom), (0, 1, 0), 2)
-        result = cv2.line(result, (self.crop_left, self.crop_top), (self.crop_left, self.crop_bottom), (0, 1, 0), 2)
-        result = cv2.line(result, (self.crop_right, self.crop_top), (self.crop_right, self.crop_bottom), (0, 1, 0), 2)
+        result = cv2.line(img, (self.crop_left, self.crop_top), (self.crop_right, self.crop_top), (0.8, 0.8, 0.8), 2)
+        result = cv2.line(result, (self.crop_left, self.crop_bottom), (self.crop_right, self.crop_bottom), (0.8, 0.8, 0.8), 2)
+        result = cv2.line(result, (self.crop_left, self.crop_top), (self.crop_left, self.crop_bottom), (0.8, 0.8, 0.8), 2)
+        result = cv2.line(result, (self.crop_right, self.crop_top), (self.crop_right, self.crop_bottom), (0.8, 0.8, 0.8), 2)
 
         result[self.crop_top:self.crop_bottom, self.crop_left:self.crop_right, :]*= 5.0
         result/= 5.0
@@ -261,10 +290,6 @@ class Image:
 
 
     def set_crop_event(self, x, y, mouse_click):
-        if self.crop_enabled != True:
-            return
-        
-
         center_x = self.image_curr.shape[1]*x 
         center_y = self.image_curr.shape[0]*y
 
@@ -329,13 +354,23 @@ class Image:
 
 
     def _update(self, x):
-        x = filters.adjust_ev(x, self.ev_curr)
-        x = filters.adjust_white_balance(x, self.temperature_curr)
+        if self.ev_curr != self.ev_default:
+            x = filters.adjust_ev(x, self.ev_curr)
+
+        if self.temperature_curr != self.temperature_default:
+            x = filters.adjust_white_balance(x, self.temperature_curr)
         
-        x = filters.global_brightness(x, self.brightness_curr)
-        x = filters.global_contrast(x, self.contrast_curr)
-        x = filters.global_saturation(x, self.saturation_curr)
-        x = filters.local_saturation(x, self.vibrance_curr)
+        if self.brightness_curr != self.brightness_default:
+            x = filters.global_brightness(x, self.brightness_curr)
+        
+        if self.contrast_curr != self.contrast_default:
+            x = filters.global_contrast(x, self.contrast_curr)
+
+        if self.saturation_curr != self.saturation_default:
+            x = filters.global_saturation(x, self.saturation_curr)
+
+        if self.vibrance_curr != self.vibrance_default:
+            x = filters.local_saturation(x, self.vibrance_curr)
 
         x = numpy.clip(x, 0.0, 1.0)
 
@@ -344,6 +379,15 @@ class Image:
 
         x = filters.histogram_equalisation(x, self.equalisation_curr)
         x = numpy.clip(x, 0.0, 1.0)
+
+        if self.blur_curr != self.blur_default:
+            x = filters.blur_filter(x, self.blur_curr)
+
+        if self.sharpen_curr != self.sharpen_default:
+            x = filters.sharpen_filter(x, self.sharpen_curr)
+        
+        if self.bilateral_curr != self.bilateral_default:
+            x = filters.bilateral_filter(x, self.bilateral_curr)
 
         return x
 
@@ -436,6 +480,25 @@ class Image:
         result["equalisation"]["max"]     = self.equalisation_max
         result["equalisation"]["curr"]    = self.equalisation_curr
 
+
+        result["blur"] = {}
+        result["blur"]["default"] = self.blur_default
+        result["blur"]["min"]     = self.blur_min
+        result["blur"]["max"]     = self.blur_max
+        result["blur"]["curr"]    = self.blur_curr
+
+        result["sharpen"] = {}
+        result["sharpen"]["default"] = self.sharpen_default
+        result["sharpen"]["min"]     = self.sharpen_min
+        result["sharpen"]["max"]     = self.sharpen_max
+        result["sharpen"]["curr"]    = self.sharpen_curr
+
+        result["bilateral"] = {}
+        result["bilateral"]["default"] = self.bilateral_default
+        result["bilateral"]["min"]     = self.bilateral_min
+        result["bilateral"]["max"]     = self.bilateral_max
+        result["bilateral"]["curr"]    = self.bilateral_curr
+
         result["crop"] = {}
         result["crop"]["default"]   = self.crop_default
         result["crop"]["curr"]      = self.crop_curr
@@ -499,6 +562,23 @@ class Image:
             self.equalisation_min     = float(result["equalisation"]["min"])
             self.equalisation_max     = float(result["equalisation"]["max"])
             self.equalisation_curr    = float(result["equalisation"]["curr"])
+
+
+            self.blur_default   = float(result["blur"]["default"])
+            self.blur_min       = float(result["blur"]["min"])
+            self.blur_max       = float(result["blur"]["max"])
+            self.blur_curr      = float(result["blur"]["curr"])
+
+            self.sharpen_default = float(result["sharpen"]["default"])
+            self.sharpen_min     = float(result["sharpen"]["min"])
+            self.sharpen_max     = float(result["sharpen"]["max"])
+            self.sharpen_curr    = float(result["sharpen"]["curr"])
+
+            self.bilateral_default = float(result["bilateral"]["default"])
+            self.bilateral_min     = float(result["bilateral"]["min"])
+            self.bilateral_max     = float(result["bilateral"]["max"])
+            self.bilateral_curr    = float(result["bilateral"]["curr"])
+
 
             self.crop_default   = int(result["crop"]["default"])
             self.crop_curr      = int(result["crop"]["curr"])
