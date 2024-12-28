@@ -91,17 +91,7 @@ class Export(QWidget):
 
 
     def on_export_image_button(self, button, extension, quality):        
-        '''
-        button.setStyleSheet("color: red;")
-        QApplication.processEvents()
-        QApplication.processEvents()
-        
-        time.sleep(2)
-        button.setStyleSheet("")
-        '''
-
         self.core.export_image(extension, quality)
-
 
 
     def on_export_timelapse_button(self, button, fps, quality):

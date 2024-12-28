@@ -5,6 +5,8 @@ from ImageLoader    import *
 from ImageSettings  import *
 import Filters
 
+import time
+
 class Core(ImageSettings):
 
     def __init__(self):
@@ -203,7 +205,54 @@ class Core(ImageSettings):
         else:
             cv2.imwrite(file_name, result)
 
-        print("exporting done")
+        print("exporting done\n")
+
+    def export_timelapse(self, fps, quality):
+        print("exporting time lapse in ", fps, " fps")
+
+        path, _ = self._split_file_name(self.current_idx)
+
+        path = path + "/LensLabExported/"
+        if os.path.exists(path) != True:
+            os.makedirs(path)
+
+        file_name = path + "time_lapse.mp4"
+
+       
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = None
+
+        photos_count = len(self.loader)
+        for n in range(photos_count):
+            time_start = time.time()
+
+            result = self._update(self.loader[n])
+
+            # apply crop
+            center_x = result.shape[1]*self.crop_x
+            center_y = result.shape[0]*self.crop_y
+            crop_left, crop_right, crop_top, crop_bottom = self._get_crop_rectangle(result.shape[1], result.shape[0], center_x, center_y)
+
+            result = result[crop_top:crop_bottom, crop_left:crop_right, :]
+
+            if writer is None:  
+                height = result.shape[0]
+                width  = result.shape[1]
+                writer = cv2.VideoWriter(file_name, fourcc, fps, (width, height))
+
+            if result.shape[0] == height and result.shape[1] == width:
+                result = numpy.clip(255*result, 0, 255).astype(numpy.uint8)
+                writer.write(result)
+
+            time_stop = time.time()
+
+            eta = (time_stop - time_start)*(photos_count - n)
+            eta = round(eta/60.0, 1)
+            print("processing image ", n, " from ", photos_count, " eta ", eta, " min")
+
+        writer.release()
+
+        print("exporting done\n")
 
     def _split_file_name(self, idx):
         image_file_name = self.loader.get_name(idx)
