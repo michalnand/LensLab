@@ -62,12 +62,20 @@ class ImageSettings:
         self.tones_high_curr    = self.tones_default
 
 
-        
+        self.colors_min         = -1.0
+        self.colors_max         = 1.0 
+        self.colors_default     = 0.0
+        self.colors_red_curr    = self.colors_default
+        self.colors_green_curr  = self.colors_default 
+        self.colors_blue_curr   = self.colors_default
+
+
+
         self.sharpen_min         = 0.0
         self.sharpen_max         = 1.0
         self.sharpen_default     = 0.0
         self.sharpen_curr        = self.sharpen_default
-
+            
         
         self.bilateral_min         = 0.0
         self.bilateral_max         = 1.0
@@ -139,6 +147,14 @@ class ImageSettings:
         result["tones"]["tones_dark_curr"] = self.tones_dark_curr
         result["tones"]["tones_mid_curr"]  = self.tones_mid_curr
         result["tones"]["tones_high_curr"] = self.tones_high_curr
+    
+        result["colors"] = {}
+        result["colors"]["min"]         = self.colors_min
+        result["colors"]["max"]         = self.colors_max
+        result["colors"]["default"]     = self.colors_default
+        result["colors"]["red"]         = self.colors_red_curr
+        result["colors"]["green"]       = self.colors_green_curr
+        result["colors"]["blue"]        = self.colors_blue_curr
 
 
         result["equalisation"] = {}
@@ -192,76 +208,92 @@ class ImageSettings:
             f = open(file_name)
             result = json.load(f)
 
-            self.ev_min     = result["ev"]["min"]
-            self.ev_max     = result["ev"]["max"]
-            self.ev_default = result["ev"]["default"]
-            self.ev_curr    = result["ev"]["curr"]
+            if "ev" in result:
+                self.ev_min     = result["ev"]["min"]
+                self.ev_max     = result["ev"]["max"]
+                self.ev_default = result["ev"]["default"]
+                self.ev_curr    = result["ev"]["curr"]
 
-            self.wb_min     = result["wb"]["min"]
-            self.wb_max     = result["wb"]["max"]
-            self.wb_default = result["wb"]["default"]
-            self.wb_curr    = result["wb"]["curr"]
+            if "wb" in result:
+                self.wb_min     = result["wb"]["min"]
+                self.wb_max     = result["wb"]["max"]
+                self.wb_default = result["wb"]["default"]
+                self.wb_curr    = result["wb"]["curr"]
 
-            self.brightness_min     = result["brightness"]["min"]
-            self.brightness_max     = result["brightness"]["max"]
-            self.brightness_default = result["brightness"]["default"]
-            self.brightness_curr    = result["brightness"]["curr"]
+            if "brightness" in result:
+                self.brightness_min     = result["brightness"]["min"]
+                self.brightness_max     = result["brightness"]["max"]
+                self.brightness_default = result["brightness"]["default"]
+                self.brightness_curr    = result["brightness"]["curr"]
 
-            self.contrast_min       = result["contrast"]["min"]
-            self.contrast_max       = result["contrast"]["max"]
-            self.contrast_default   = result["contrast"]["default"]
-            self.contrast_curr      = result["contrast"]["curr"]
+            if "contrast" in result:
+                self.contrast_min       = result["contrast"]["min"]
+                self.contrast_max       = result["contrast"]["max"]
+                self.contrast_default   = result["contrast"]["default"]
+                self.contrast_curr      = result["contrast"]["curr"]
 
-            self.saturation_min     = result["saturation"]["min"]
-            self.saturation_max     = result["saturation"]["max"]
-            self.saturation_default = result["saturation"]["default"]
-            self.saturation_curr    = result["saturation"]["curr"]
+            if "saturation" in result:
+                self.saturation_min     = result["saturation"]["min"]
+                self.saturation_max     = result["saturation"]["max"]
+                self.saturation_default = result["saturation"]["default"]
+                self.saturation_curr    = result["saturation"]["curr"]
 
-            self.vibrance_min       = result["vibrance"]["min"]
-            self.vibrance_max       = result["vibrance"]["max"]
-            self.vibrance_default   = result["vibrance"]["default"]
-            self.vibrance_curr      = result["vibrance"]["curr"]
+            if "vibrance" in result:
+                self.vibrance_min       = result["vibrance"]["min"]
+                self.vibrance_max       = result["vibrance"]["max"]
+                self.vibrance_default   = result["vibrance"]["default"]
+                self.vibrance_curr      = result["vibrance"]["curr"]
+
+            if "tones" in result:
+                self.tones_min          = result["tones"]["min"]
+                self.tones_max          = result["tones"]["max"]
+                self.tones_default      = result["tones"]["default"]
+                self.tones_dark_curr    = result["tones"]["tones_dark_curr"]
+                self.tones_mid_curr     = result["tones"]["tones_mid_curr"]
+                self.tones_high_curr    = result["tones"]["tones_high_curr"]
+
+            if "colors" in result:
+                self.colors_min             = result["colors"]["min"]
+                self.colors_max             = result["colors"]["max"]
+                self.colors_default         = result["colors"]["default"]
+                self.colors_red_curr        = result["colors"]["red"]
+                self.colors_green_curr      = result["colors"]["green"]
+                self.colors_blue_curr       = result["colors"]["blue"]
+
+            if "equalisation" in result:
+                self.equalisation_min       = result["equalisation"]["min"]
+                self.equalisation_max       = result["equalisation"]["max"]
+                self.equalisation_default   = result["equalisation"]["default"]
+                self.equalisation_curr      = result["equalisation"]["curr"]
+
+            if "blur" in result:
+                self.blur_min       =   result["blur"]["min"]
+                self.blur_max       =   result["blur"]["max"]
+                self.blur_default   =   result["blur"]["default"]
+                self.blur_curr      =   result["blur"]["curr"]
+
+            if "sharpen" in result:
+                self.sharpen_min    = result["sharpen"]["min"]
+                self.sharpen_max    = result["sharpen"]["max"]
+                self.sharpen_default= result["sharpen"]["default"]
+                self.sharpen_curr   = result["sharpen"]["curr"]
+
+            if "bilateral" in result:
+                self.bilateral_min      = result["bilateral"]["min"]
+                self.bilateral_max      = result["bilateral"]["max"]
+                self.bilateral_default  = result["bilateral"]["default"]
+                self.bilateral_curr     = result["bilateral"]["curr"]
+
+            if "crop" in result:
+                self.crop_modes     = result["crop"]["crop_modes"]
+                self.crop_ratio_x   = result["crop"]["crop_ratio_x"]
+                self.crop_ratio_y   = result["crop"]["crop_ratio_y"]
+                self.crop_default   = result["crop"]["default"]
+                self.crop_curr      = result["crop"]["curr"]
 
 
-            self.tones_min          = result["tones"]["min"]
-            self.tones_max          = result["tones"]["max"]
-            self.tones_default      = result["tones"]["default"]
-            self.tones_dark_curr    = result["tones"]["tones_dark_curr"]
-            self.tones_mid_curr     = result["tones"]["tones_mid_curr"]
-            self.tones_high_curr    = result["tones"]["tones_high_curr"]
-
-
-            self.equalisation_min       = result["equalisation"]["min"]
-            self.equalisation_max       = result["equalisation"]["max"]
-            self.equalisation_default   = result["equalisation"]["default"]
-            self.equalisation_curr      = result["equalisation"]["curr"]
-
-
-            self.blur_min       =   result["blur"]["min"]
-            self.blur_max       =   result["blur"]["max"]
-            self.blur_default   =   result["blur"]["default"]
-            self.blur_curr      =   result["blur"]["curr"]
-
-            self.sharpen_min    = result["sharpen"]["min"]
-            self.sharpen_max    = result["sharpen"]["max"]
-            self.sharpen_default= result["sharpen"]["default"]
-            self.sharpen_curr   = result["sharpen"]["curr"]
-
-            self.bilateral_min      = result["bilateral"]["min"]
-            self.bilateral_max      = result["bilateral"]["max"]
-            self.bilateral_default  = result["bilateral"]["default"]
-            self.bilateral_curr     = result["bilateral"]["curr"]
-
-            
-            self.crop_modes     = result["crop"]["crop_modes"]
-            self.crop_ratio_x   = result["crop"]["crop_ratio_x"]
-            self.crop_ratio_y   = result["crop"]["crop_ratio_y"]
-            self.crop_default   = result["crop"]["default"]
-            self.crop_curr      = result["crop"]["curr"]
-
-
-            self.crop_x         = result["crop"]["x"]
-            self.crop_y         = result["crop"]["y"]
+                self.crop_x         = result["crop"]["x"]
+                self.crop_y         = result["crop"]["y"]
             
 
         else:
@@ -326,7 +358,7 @@ class ImageSettings:
 
     def get_tones_state(self):
         return self.tones_min, self.tones_max, self.tones_default, self.tones_dark_curr, self.tones_mid_curr, self.tones_high_curr
- 
+
     def set_tones_dark(self, value):
         self.tones_dark_curr = value
         self.settings_changed_callback()
@@ -339,6 +371,21 @@ class ImageSettings:
         self.tones_high_curr = value
         self.settings_changed_callback()
 
+
+    def get_colors_state(self):
+        return self.colors_min, self.colors_max, self.colors_default, self.colors_red_curr, self.colors_green_curr, self.colors_blue_curr
+    
+    def set_colors_red(self, value):
+        self.colors_red_curr = value
+        self.settings_changed_callback()
+
+    def set_colors_green(self, value):
+        self.colors_green_curr = value
+        self.settings_changed_callback()
+
+    def set_colors_blue(self, value):
+        self.colors_blue_curr = value
+        self.settings_changed_callback()
 
 
     def get_blur_state(self):

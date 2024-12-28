@@ -55,6 +55,7 @@ def _create_colors(n_colors):
 
 def segmentation(x, n_samples = 1000):
 
+
     features  = _compute_image_features(x)
 
     samples_y = numpy.random.randint(0, features.shape[0], n_samples)

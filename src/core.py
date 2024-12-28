@@ -329,6 +329,9 @@ class Core(ImageSettings):
         x = Filters.adjust_tones(x, self.tones_dark_curr, self.tones_mid_curr, self.tones_high_curr)
         x = numpy.clip(x, 0.0, 1.0)
 
+        if self.colors_red_curr != self.colors_default or self.colors_green_curr != self.colors_default or self.colors_blue_curr != self.colors_default:
+            x = Filters.adjust_colors(x, self.colors_red_curr, self.colors_green_curr, self.colors_blue_curr)
+
         x = Filters.histogram_equalisation(x, self.equalisation_curr)
         x = numpy.clip(x, 0.0, 1.0)
 

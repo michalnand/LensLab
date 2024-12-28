@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton, QListWidget,
-                             QSlider, QLabel)
+                             QSlider, QLabel, QSpacerItem, QSizePolicy)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import pyqtgraph as pg
@@ -45,6 +45,8 @@ class Tools(QWidget):
 
         # Tool options 
         self.tool_options_layout = QVBoxLayout()
+        self.tool_options_layout.setSpacing(5)
+
         self.tool_options_container = QWidget()
         self.tool_options_container.setLayout(self.tool_options_layout)
         self.main_layout.addWidget(self.tool_options_container, stretch=2)
@@ -406,6 +408,7 @@ class Tools(QWidget):
         # tones options
         tones_min, tones_max, tones_default, tones_dark_curr, tones_mid_curr, tones_high_curr = self.core.get_tones_state()
 
+        
         # dark tones - shadows
         tones_dark_layout = QHBoxLayout()
 
@@ -462,7 +465,7 @@ class Tools(QWidget):
         tones_high_layout = QHBoxLayout()
 
         # label
-        tones_high_label = QLabel("Midtones " + str(round(tones_high_curr, 2)))
+        tones_high_label = QLabel("Highlights " + str(round(tones_high_curr, 2)))
         self.tool_options_layout.addWidget(tones_high_label)
 
         # slider
@@ -481,6 +484,89 @@ class Tools(QWidget):
         # callbacks 
         tones_high_slider.valueChanged.connect(lambda : self.on_tones_high_change(tones_high_slider, tones_high_label))
         tones_high_reset_button.clicked.connect(lambda : self.on_tones_high_reset(tones_high_slider, tones_high_label))
+        
+
+
+        #colors options
+        colors_min, colors_max, colors_default, colors_red_curr, colors_green_curr, colors_blue_curr = self.core.get_colors_state()
+
+
+        # red color
+        red_color_layout = QHBoxLayout()
+
+        # label
+        red_color_label = QLabel("Red " + str(round(colors_red_curr, 2)))
+        self.tool_options_layout.addWidget(red_color_label)
+
+        # slider
+        red_color_slider = QSlider(Qt.Horizontal)   
+        red_color_slider.setRange(int(self.n_steps*colors_min), int(self.n_steps*colors_max))
+        red_color_slider.setValue(int(self.n_steps*colors_red_curr))
+        red_color_layout.addWidget(red_color_slider)
+
+        # button
+        red_color_reset_button = QPushButton("X")
+        red_color_reset_button.setFixedSize(30, 30)
+        red_color_layout.addWidget(red_color_reset_button)
+       
+        self.tool_options_layout.addLayout(red_color_layout)
+
+        # callbacks 
+        red_color_slider.valueChanged.connect(lambda : self.on_red_color_change(red_color_slider, red_color_label))
+        red_color_reset_button.clicked.connect(lambda : self.on_red_color_reset(red_color_slider, red_color_label))
+
+
+
+        # green color
+        green_color_layout = QHBoxLayout()
+
+        # label
+        green_color_label = QLabel("Green " + str(round(colors_green_curr, 2)))
+        self.tool_options_layout.addWidget(green_color_label)
+
+        # slider
+        green_color_slider = QSlider(Qt.Horizontal)   
+        green_color_slider.setRange(int(self.n_steps*colors_min), int(self.n_steps*colors_max))
+        green_color_slider.setValue(int(self.n_steps*colors_green_curr))
+        green_color_layout.addWidget(green_color_slider)
+
+        # button
+        green_color_reset_button = QPushButton("X")
+        green_color_reset_button.setFixedSize(30, 30)
+        green_color_layout.addWidget(green_color_reset_button)
+       
+        self.tool_options_layout.addLayout(green_color_layout)
+
+        # callbacks 
+        green_color_slider.valueChanged.connect(lambda : self.on_green_color_change(green_color_slider, green_color_label))
+        green_color_reset_button.clicked.connect(lambda : self.on_green_color_reset(green_color_slider, green_color_label))
+
+
+
+        # blue color
+        blue_color_layout = QHBoxLayout()
+
+        # label
+        blue_color_label = QLabel("Blue " + str(round(colors_blue_curr, 2)))
+        self.tool_options_layout.addWidget(blue_color_label)
+
+        # slider
+        blue_color_slider = QSlider(Qt.Horizontal)   
+        blue_color_slider.setRange(int(self.n_steps*colors_min), int(self.n_steps*colors_max))
+        blue_color_slider.setValue(int(self.n_steps*colors_blue_curr))
+        blue_color_layout.addWidget(blue_color_slider)
+
+        # button
+        blue_color_reset_button = QPushButton("X")
+        blue_color_reset_button.setFixedSize(30, 30)
+        blue_color_layout.addWidget(blue_color_reset_button)
+       
+        self.tool_options_layout.addLayout(blue_color_layout)
+
+        # callbacks 
+        blue_color_slider.valueChanged.connect(lambda : self.on_blue_color_change(blue_color_slider, blue_color_label))
+        blue_color_reset_button.clicked.connect(lambda : self.on_blue_color_reset(blue_color_slider, blue_color_label))
+
 
 
 
@@ -525,6 +611,36 @@ class Tools(QWidget):
         slider.setValue(int(tones_default*self.n_steps))
 
     
+
+    def on_red_color_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_colors_red(value)
+        label.setText("Red " + str(round(value, 2)))
+    
+    def on_red_color_reset(self, slider, value):
+        colors_min, colors_max, colors_default, colors_red_curr, colors_green_curr, colors_blue_curr = self.core.get_colors_state()
+        self.core.set_colors_red(colors_default)
+        slider.setValue(int(colors_default*self.n_steps))
+
+    def on_green_color_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_colors_green(value)
+        label.setText("Green " + str(round(value, 2)))
+    
+    def on_green_color_reset(self, slider, value):
+        colors_min, colors_max, colors_default, colors_red_curr, colors_green_curr, colors_blue_curr = self.core.get_colors_state()
+        self.core.set_colors_green(colors_default)
+        slider.setValue(int(colors_default*self.n_steps))
+
+    def on_blue_color_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_colors_blue(value)
+        label.setText("Blue " + str(round(value, 2)))
+    
+    def on_blue_color_reset(self, slider, value):
+        colors_min, colors_max, colors_default, colors_red_curr, colors_green_curr, colors_blue_curr = self.core.get_colors_state()
+        self.core.set_colors_blue(colors_default)
+        slider.setValue(int(colors_default*self.n_steps))
 
 
 

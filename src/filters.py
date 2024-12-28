@@ -3,17 +3,17 @@ import numpy
 
 
 def global_brightness(x, level):
-    return x + level
+    return x + float(level)
 
 def global_contrast(x, level):
     mean_intensity = numpy.mean(x, axis=(0, 1), keepdims=True)
-    result = (x - mean_intensity) * level + mean_intensity
+    result = (x - mean_intensity) * float(level) + mean_intensity
     return result
 
 def global_saturation(x, level):
-    luminance = numpy.dot(x, [0.299, 0.587, 0.114])[..., numpy.newaxis]
+    luminance = numpy.dot(x, [float(0.299), float(0.587),float(0.114)])[..., numpy.newaxis]
     result = luminance + (x - luminance) * level
-    return result
+    return result.astype(numpy.float32)
 
 def adjust_ev(x, ev_change):
     ev_factor = 2 ** ev_change
@@ -126,7 +126,7 @@ def adjust_white_balance(x, temperature = 6500):
     # Apply scaling factors to the image channels
     balanced_image = x * compensation_factors
     
-    return balanced_image
+    return balanced_image.astype(numpy.float32)
 
 
 
@@ -146,25 +146,53 @@ def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
     return adjusted_image
 
 
+
+def adjust_colors(image, red, green, blue): 
+    # Convert RGB (0-1 range) to HSV
+    #hsv = cv2.cvtColor((image * 255).astype(numpy.uint8), cv2.COLOR_RGB2HSV).astype(numpy.float32)
+    #h, s, v = cv2.split(hsv)
+
+    hsv = cv2.cvtColor((image * 255.0), cv2.COLOR_RGB2HSV).astype(numpy.float32)
+    h, s, v = cv2.split(hsv)
+    
+    
+    red_adjust   = red * (h < 60).astype(float)
+    green_adjust = green * ((h >= 60) & (h < 120)).astype(float)
+    blue_adjust  = blue * (h >= 120).astype(float)
+
+    adjust = (red_adjust + green_adjust + blue_adjust)/3.0
+
+    # Apply enhancements using the mask
+    s = numpy.clip(s + adjust, 0, 255).astype(numpy.float32)
+    
+    
+    # Merge back and convert to RGB
+    enhanced_hsv = cv2.merge([h, s, v]) 
+    enhanced_image = cv2.cvtColor(enhanced_hsv, cv2.COLOR_HSV2RGB)
+    
+    # Normalize to range [0, 1]
+    return (enhanced_image / 255.0).astype(numpy.float32)
+
+
 def histogram_equalisation(image, strength):
    
     # Convert RGB to LAB for luminance processing
-    lab_image = cv2.cvtColor((image * 255).astype(numpy.uint8), cv2.COLOR_RGB2LAB)
+    lab_image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab_image)
 
-    # Perform histogram equalization on the L channel
-    equalized_l = cv2.equalizeHist(l)
+    # Perform histogram equalization on the L channel   
+    equalized_l = cv2.equalizeHist(l.astype(numpy.uint8)).astype(numpy.float32)
+    equalized_l = numpy.clip(equalized_l, 0.0, 255.0)
 
-    # Blend the original and equalized L channels based on the strength
-    blended_l = cv2.addWeighted(l.astype(numpy.float32), 1 - strength, 
-                                equalized_l.astype(numpy.float32), strength, 0)
+    blended_l = (1.0 - strength)*l + strength*equalized_l
+    blended_l = numpy.clip(blended_l, 0.0, 255.0)
 
     # Recombine LAB channels and convert back to RGB    
-    lab_image = cv2.merge((blended_l.astype(numpy.uint8), a, b))
+    lab_image = cv2.merge((blended_l, a, b))
     equalized_image = cv2.cvtColor(lab_image, cv2.COLOR_LAB2RGB)
 
     # Convert back to [0, 1] float32
-    return equalized_image.astype(numpy.float32) / 255
+    return equalized_image.astype(numpy.float32)
 
 
 
