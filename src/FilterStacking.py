@@ -3,7 +3,7 @@ import cv2
 
 
 
-def bracketing(images, kernel_size = 11, min_accept = 0.05, max_accept = 0.95, temperature = 0.1):
+def bracketing(images, kernel_size = 11, min_accept = 0.05, max_accept = 0.95, temperature = 1.0):
     exposition_scores = []
     
     # for each image compute exposition score
