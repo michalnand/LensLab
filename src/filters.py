@@ -43,7 +43,7 @@ def _compute_saturation(x):
     result = (numpy.max(x, 2) - numpy.min(x, 2))/(numpy.max(x, 2) + 10**-6)
     return result
 
-def _compute_colorfulness(x):
+def _compute_colorfulness(x, normalise = False):
     R, G, B = x[:, :, 0], x[:, :, 1], x[:, :, 2]
     
     # Calculate differences
@@ -51,35 +51,31 @@ def _compute_colorfulness(x):
     gb = numpy.abs(G - B)
     br = numpy.abs(B - R)
 
-    
     colorfulness = numpy.sqrt(rg**2 + gb**2 + br**2)
+
+    if normalise:
+        norm = numpy.sqrt(R**2 + G**2 + B**2)
+        colorfulness = colorfulness / (norm + 1e-8)
+        
     return colorfulness
 
 
 
    
+def local_saturation(x, level = 1.0, slope = 8.0, kernel_size = 11):
+    colorfulness    = _compute_colorfulness(x, True)
+    colorfulness    = cv2.GaussianBlur(colorfulness, (kernel_size,kernel_size),0)
 
-def local_saturation(x, level = 1.5, slope = 1.0, kernel_size = 11):
-    #saturation   = _compute_saturation(x)
-    colorfulness = _compute_colorfulness(x)
-
-    #saturation_blur   = cv2.GaussianBlur(saturation, (kernel_size,kernel_size),0)
-    colorfulness_blur = cv2.GaussianBlur(colorfulness, (kernel_size,kernel_size),0)
-
-    #saturation_var   = cv2.GaussianBlur((saturation - saturation_blur)**2, (kernel_size, kernel_size), 0)
-    #saturation_var   = numpy.sqrt(saturation_var)
-    colorfulness_var = cv2.GaussianBlur((colorfulness - colorfulness_blur)**2, (kernel_size, kernel_size), 0)
-    colorfulness_var = numpy.sqrt(colorfulness_var)
-
-    colorfulness_var = numpy.clip(slope*colorfulness_var, 0.0, 1.0)
-   
-
-    adjusted_saturation = (1.0 - colorfulness_var)*level + colorfulness_var*1.0
+    weight          = numpy.exp(-colorfulness*slope)
+    
+    adjusted_saturation = (1.0 - weight)*1.0 + weight*level
 
     adjusted_saturation = numpy.expand_dims(adjusted_saturation, 2)
     result = global_saturation(x, adjusted_saturation)
 
     return result
+
+    
 
 
  # Convert Kelvin temperature to RGB scaling factors

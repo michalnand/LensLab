@@ -18,8 +18,8 @@ class PhotoToolBoxEnv:
 
         # apply random distortion
         dist_adjustment = Adjustment()
-        #dist_adjustment.random_adjustment()
-        self.image_distorted =self.image_target.copy() #dist_adjustment.apply_adjustment(self.image_target)
+        dist_adjustment.random_adjustment()
+        self.image_distorted = dist_adjustment.apply_adjustment(self.image_target)
 
         # reinitialise agent's adjustment to default
         self.adjustment.default_adjustment()
@@ -34,7 +34,7 @@ class PhotoToolBoxEnv:
     def step(self, action):
         
         # modify adjustment by agents action
-        self.adjustment.set_dadjustment(0.0000001*action)
+        self.adjustment.set_dadjustment(action)
 
         # reconstruct image by current tools settings
         image_restored = self.adjustment.apply_adjustment(self.image_distorted)
@@ -42,6 +42,7 @@ class PhotoToolBoxEnv:
         # compute relative error and reward
         diff    = numpy.abs(self.image_target - image_restored)
         error   = (diff/(self.image_target + 10e-8)).mean()
+        error   = numpy.clip(error, -1.0, 1.0)
         reward  = 1.0 - error
 
         self.steps+= 1
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     print(">>> ", state.shape, state.mean(), state.std(), state.min(), state.max())
 
     for n in range(10):
-        action = numpy.random.randn(env.get_actions_count())
+        action = 0.01*numpy.random.randn(env.get_actions_count())
         state, reward, done = env.step(action)
         print(reward, done)
 
