@@ -4,6 +4,7 @@ import cv2
 from ImageLoader    import *
 from ImageSettings  import *
 import Filters
+import FilterStacking
 
 import time
 
@@ -30,6 +31,13 @@ class Core(ImageSettings):
 
         self.split_preview = False
 
+
+    def get_count(self):
+        return len(self.loader)
+    
+    def get_curr_idx(self):
+        return self.current_idx
+
     def toogle_split_preview(self):
         if self.split_preview:
             self.split_preview = False
@@ -44,6 +52,9 @@ class Core(ImageSettings):
 
     def register_tools_instance(self, tools_instance):
         self.tools_instance = tools_instance
+
+    def register_stacking_instance(self, stacking_instance):
+        self.stacking_instance = stacking_instance
 
     def register_export_instance(self, export_instance):
         self.export_instance = export_instance
@@ -176,6 +187,36 @@ class Core(ImageSettings):
 
 
         self.update_process()
+
+        self.stacking_instance.update_range()
+
+
+        
+
+    def stacking(self, stacking_type, photos_count):
+        print("core stacking ", stacking_type, photos_count)
+
+        idx = self.current_idx
+
+        # process image stacking
+        result = FilterStacking.stacking(stacking_type, self.loader, idx, photos_count)
+
+        path, file_name = self._split_file_name(idx)
+        file_name = path + file_name + "_stacked_" + stacking_type + ".jpg"
+
+        result = numpy.array(result*255, dtype=numpy.uint8)
+        cv2.imwrite(file_name, result, [int(cv2.IMWRITE_JPEG_QUALITY), 99])
+
+        # load new image
+        self.loader.add_new(file_name)
+        self.set_curr_image(len(self.loader)-1)
+
+        # refresh image view
+        self.photo_view_instance.update_thumbnails(self.loader.thumbnails)
+        self.photo_view_instance.update_image(self.image_curr)
+        self.tools_instance.update_histogram(self.histogram)
+
+
 
     def export_image(self, extension, quality):
         path, file_name = self._split_file_name(self.current_idx)

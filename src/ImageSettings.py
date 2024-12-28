@@ -87,6 +87,9 @@ class ImageSettings:
         self.crop_y         = 0.5
 
 
+        self.stacking_modes = ["mean", "max", "min", "median", "bracketing"]
+
+
 
     def save_settings(self, file_name):
         print("saving settings to ", file_name)
@@ -365,6 +368,9 @@ class ImageSettings:
     def set_crop_mode(self, value):
         self.crop_curr = value
         self.settings_changed_callback()
+
+    def get_stacking_modes(self):
+        return self.stacking_modes
 
 
     def settings_changed_callback(self):

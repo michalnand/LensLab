@@ -8,6 +8,7 @@ from PhotoView  import *
 from TabButtons import *
 
 from Tools      import *
+from Stacking   import *
 from Export     import *
 
 
@@ -37,11 +38,8 @@ class LensLabApp(QMainWindow):
         self.tool_widget = Tools(self.core)
         self.main_tabs.add("Tools", self.tool_widget.get())
 
-        #self.stacking_widget = Stacking(self.core)
-        #self.main_tabs.add("Stacking", self.stacking_widget.get())
-
-        self.stacking_widget = QWidget()
-        self.main_tabs.add("Stacking", self.stacking_widget)
+        self.stacking_widget = Stacking(self.core)
+        self.main_tabs.add("Stacking", self.stacking_widget.get())
 
         self.export_widget = Export(self.core)
         self.main_tabs.add("Export", self.export_widget.get())

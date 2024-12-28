@@ -193,3 +193,6 @@ def bilateral_filter(image, strength, diameter=9, sigma_color=75, sigma_space=75
     result  = blurred*strength + (1.0 - strength)*image
 
     return result
+
+
+
