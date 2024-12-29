@@ -21,10 +21,10 @@ def adjust_ev(x, ev_change):
     return result
 
 
-def adjust_ev_adaptive(x, ev_change, kernel_size = 11):
+def adjust_ev_adaptive(x, ev_change, kernel_size, sigma = 0.0):
     luminance = numpy.dot(x, [float(0.299), float(0.587),float(0.114)])[..., numpy.newaxis]
     luminance_mean  = luminance.mean()
-    luminance_local = cv2.GaussianBlur(luminance, (kernel_size, kernel_size), 0)
+    luminance_local = cv2.GaussianBlur(luminance, (kernel_size, kernel_size), sigma)
 
 
     d = (luminance_local - luminance_mean)/(luminance_mean + 1e-6)
@@ -80,9 +80,9 @@ def _compute_colorfulness(x, normalise = False):
 
 
    
-def local_saturation(x, level = 1.0, slope = 8.0, kernel_size = 11):
+def local_saturation(x, level, kernel_size, sigma = 0.0, slope = 8.0):
     colorfulness    = _compute_colorfulness(x, True)
-    colorfulness    = cv2.GaussianBlur(colorfulness, (kernel_size,kernel_size),0)
+    colorfulness    = cv2.GaussianBlur(colorfulness, (kernel_size,kernel_size), sigma)
 
     weight          = numpy.exp(-colorfulness*slope)
     
@@ -145,12 +145,12 @@ def adjust_white_balance(x, temperature = 6500):
 
 
 
-def adjust_clarity(image, strength, kernel_size = 11):
+def adjust_clarity(image, strength, kernel_size, sigma = 0.0):
     # Convert to grayscale for detail emphasis
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     
     # Create a high-pass filter using a Gaussian blur
-    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), sigma)
     high_pass = gray - blurred  # Extract details
     high_pass = numpy.expand_dims(high_pass, 2)
     
@@ -161,7 +161,7 @@ def adjust_clarity(image, strength, kernel_size = 11):
 
 
 '''
-def adjust_dehaze(image, strength, kernel_size = 11):
+def adjust_dehaze(image, strength, kernel_size):
     # Compute the dark channel
     dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
     dark_channel = cv2.erode(dark_channel, numpy.ones((kernel_size, kernel_size)))  # Local minima for haze
@@ -189,11 +189,11 @@ def adjust_dehaze(image, strength, kernel_size = 11):
 
 
 
-def adjust_dehaze(image, strength, kernel_size = 11):
+def adjust_dehaze(image, strength, kernel_size, sigma = 0.0):
     # Compute the dark channel
     dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
     
-    dark_channel = cv2.GaussianBlur(dark_channel, (kernel_size, kernel_size), 0)  # Local minima for haze
+    dark_channel = cv2.GaussianBlur(dark_channel, (kernel_size, kernel_size), sigma)  # Local minima for haze
     
     # Softly estimate atmospheric light (weighted average of top dark channel pixels)
     flat_image = image.reshape(-1, 3)
@@ -213,52 +213,6 @@ def adjust_dehaze(image, strength, kernel_size = 11):
     transmission = transmission[:, :, numpy.newaxis]
     dehazed = (image - atmospheric_light) / transmission + atmospheric_light
     return numpy.clip(dehazed, 0.0, 1.0)
-
-'''
-def guided_filter(I, p, kernel_size):
-    mean_I  = cv2.boxFilter(I, cv2.CV_32F, (kernel_size, kernel_size))
-    mean_p  = cv2.boxFilter(p, cv2.CV_32F, (kernel_size, kernel_size))
-    mean_Ip = cv2.boxFilter(I * p, cv2.CV_32F, (kernel_size, kernel_size))
-
-
-    cov_Ip = mean_Ip - mean_I * mean_p
-
-    mean_II = cv2.boxFilter(I * I, cv2.CV_32F, (kernel_size, kernel_size))
-    var_I = mean_II - mean_I * mean_I
-
-    a = cov_Ip / (var_I + 1e-6)
-    b = mean_p - a * mean_I
-
-    mean_a = cv2.boxFilter(a, cv2.CV_32F, (kernel_size, kernel_size))
-    mean_b = cv2.boxFilter(b, cv2.CV_32F, (kernel_size, kernel_size))
-
-    return mean_a * I + mean_b
-
-def adjust_dehaze(image, strength, kernel_size = 11):
-    # Compute the dark channel
-    # Minimum across R, G, B channels
-    dark_channel = numpy.min(image, axis=2)  
-    
-    # Apply guided filter for smoother, edge-aware dark channel
-    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    dark_channel = guided_filter(gray_image, dark_channel, kernel_size)
-    
-    # Atmospheric light estimation (same as original)
-    flat_image = image.reshape(-1, 3)
-    flat_dark = dark_channel.ravel()
-    weights = numpy.exp(flat_dark / 0.1)
-    weights /= weights.sum()
-    atmospheric_light = numpy.dot(flat_image.T, weights).reshape(-1)
-    
-    # Transmission map estimation
-    transmission = 1 - strength * (dark_channel / atmospheric_light.max())
-    transmission = numpy.clip(transmission, 0.1, 1)
-    
-    # Recover the image
-    transmission = numpy.expand_dims(transmission, 2)
-    dehazed = (image - atmospheric_light) / transmission + atmospheric_light
-    return numpy.clip(dehazed, 0.0, 1.0, dtype=numpy.float32)
-'''
 
 
 
@@ -328,7 +282,7 @@ def histogram_equalisation(image, strength):
 
 
 
-def blur_filter(image, strength, kernel_size = 17, sigma = 3.0):
+def blur_filter(image, strength, kernel_size, sigma = 0.0):
     blurred = cv2.GaussianBlur(image, (kernel_size,kernel_size), sigma)
     result  = blurred*strength + (1.0 - strength)*image
 
@@ -336,7 +290,7 @@ def blur_filter(image, strength, kernel_size = 17, sigma = 3.0):
    
 
 
-def sharpen_filter(image, strength, kernel_size = 17, sigma = 3.0):
+def sharpen_filter(image, strength, kernel_size, sigma = 0.0):
     blurred     = cv2.GaussianBlur(image, (kernel_size,kernel_size), sigma)
     sharpened   = image + strength * (image - blurred)  
 

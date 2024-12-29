@@ -14,6 +14,7 @@ class Core(ImageSettings):
         super().__init__()
 
         self.scale_ratio = 4
+        self.kernel_size = 7
 
         # thumbnails size
         self.tw = 120 
@@ -28,6 +29,12 @@ class Core(ImageSettings):
         self.tool_names.append("Crop")
 
         self.image_settings = ImageSettings()
+
+        
+        self.kernel_size_export = self.scale_ratio*self.kernel_size
+
+        if self.kernel_size_export%2 == 0:
+            self.kernel_size_export-= 1
 
         self.split_preview = False
 
@@ -63,25 +70,12 @@ class Core(ImageSettings):
         return self.tool_names
     
     def get_histogram(self, image):
-        tmp = numpy.array(image*255, dtype=numpy.uint8)
 
-        hist_size = 255
-
-        histogram = numpy.zeros((4, hist_size))
+        histogram = self._compute_histogram(image)
 
 
-        r = cv2.calcHist([tmp], [0], None, [hist_size], [0, 256])[:, 0]
-        g = cv2.calcHist([tmp], [1], None, [hist_size], [0, 256])[:, 0]
-        b = cv2.calcHist([tmp], [2], None, [hist_size], [0, 256])[:, 0]
 
 
-        w = r + g + b
-        w = w/(w.sum() + 1e-6)
-            
-        histogram[0] = w   
-        histogram[1] = r/(r.sum() + 1e-6)
-        histogram[2] = g/(g.sum() + 1e-6)
-        histogram[3] = b/(b.sum() + 1e-6)
 
         # histogram smoothing
         window_size = 9
@@ -132,7 +126,7 @@ class Core(ImageSettings):
     def update_process(self):
         print("apply settings : update_process")
 
-        self.image_curr = self._update(self.image_orig_small)
+        self.image_curr = self._update(self.image_orig_small, self.kernel_size)
         self.histogram  = self.get_histogram(self.image_curr)
 
         if self.split_preview:
@@ -237,7 +231,7 @@ class Core(ImageSettings):
         file_name = path + file_name + "." + extension
         print("exporting to ", file_name)
 
-        result = self._update(self.image_orig)
+        result = self._update(self.image_orig, self.kernel_size_export)
 
         # apply crop
         center_x = result.shape[1]*self.crop_x
@@ -273,7 +267,7 @@ class Core(ImageSettings):
         for n in range(photos_count):
             time_start = time.time()
 
-            result = self._update(self.loader[n])
+            result = self._update(self.loader[n], self.kernel_size_export)
 
             # apply crop
             center_x = result.shape[1]*self.crop_x
@@ -309,23 +303,23 @@ class Core(ImageSettings):
         return path, file_name
     
 
-    def _update(self, x):
+    def _update(self, x, kernel_size):
         x = x.copy()
 
         if self.ev_curr != self.ev_default:
             x = Filters.adjust_ev(x, self.ev_curr)
 
         if self.ev_adaptive_curr != self.ev_adaptive_default:
-            x = Filters.adjust_ev_adaptive(x, self.ev_adaptive_curr)
+            x = Filters.adjust_ev_adaptive(x, self.ev_adaptive_curr, kernel_size)
 
         if self.wb_curr != self.wb_default:
             x = Filters.adjust_white_balance(x, self.wb_curr)
 
         if self.clarity_curr != self.clarity_default:
-            x = Filters.adjust_clarity(x, self.clarity_curr)
+            x = Filters.adjust_clarity(x, self.clarity_curr, kernel_size)
 
         if self.dehaze_curr != self.dehaze_default:
-            x = Filters.adjust_dehaze(x, self.dehaze_curr)
+            x = Filters.adjust_dehaze(x, self.dehaze_curr, kernel_size)
         
         if self.brightness_curr != self.brightness_default:
             x = Filters.global_brightness(x, self.brightness_curr)
@@ -338,7 +332,7 @@ class Core(ImageSettings):
             x = Filters.global_saturation(x, self.saturation_curr)
 
         if self.vibrance_curr != self.vibrance_default:
-            x = Filters.local_saturation(x, self.vibrance_curr)
+            x = Filters.local_saturation(x, self.vibrance_curr, kernel_size)
             
 
         x = numpy.clip(x, 0.0, 1.0)
@@ -353,10 +347,10 @@ class Core(ImageSettings):
         x = numpy.clip(x, 0.0, 1.0)
 
         if self.blur_curr != self.blur_default:
-            x = Filters.blur_filter(x, self.blur_curr)
+            x = Filters.blur_filter(x, self.blur_curr, kernel_size)
 
         if self.sharpen_curr != self.sharpen_default:
-            x = Filters.sharpen_filter(x, self.sharpen_curr)
+            x = Filters.sharpen_filter(x, self.sharpen_curr, kernel_size)
         
         if self.bilateral_curr != self.bilateral_default:
             x = Filters.bilateral_filter(x, self.bilateral_curr)
@@ -437,6 +431,112 @@ class Core(ImageSettings):
 
         return rect_left, rect_right, rect_top, rect_bottom
     
+    def _compute_histogram(self, x):
+        tmp = numpy.array(x*255, dtype=numpy.uint8)
+        hist_size = 256
+        histogram = numpy.zeros((4, hist_size))
+
+        r = cv2.calcHist([tmp], [0], None, [hist_size], [0, 256])[:, 0]
+        g = cv2.calcHist([tmp], [1], None, [hist_size], [0, 256])[:, 0]
+        b = cv2.calcHist([tmp], [2], None, [hist_size], [0, 256])[:, 0]
+
+        w = r + g + b
+            
+        histogram[0] = w/(w.sum() + 1e-6)   
+        histogram[1] = r/(r.sum() + 1e-6)
+        histogram[2] = g/(g.sum() + 1e-6)
+        histogram[3] = b/(b.sum() + 1e-6)
+
+        return histogram
+    
+    def auto_adjust_ev(self, x, threshold = 0.1):
+        ev_result = self.ev_default
+
+        for i in range(10):
+            x_adjusted = Filters.adjust_ev(x, ev_result)
+
+            lum     = x_adjusted.mean(axis=0)       
+            count   = lum.shape[0]
+
+            over_exposed  = (lum > (1.0 - 3*threshold)).sum()/count
+            under_exposed = (lum < threshold).sum()/count
+
+
+            ev_result += 0.5*(-over_exposed + under_exposed)   
+
+            ev_result = float(numpy.clip(ev_result, self.ev_min, self.ev_max))
+
+            print("optimizing ev to ", i, round(ev_result, 3))
+
+        return x_adjusted, ev_result
+    
+
+    def auto_adjust_adaptive_ev(self, x, threshold = 0.1):
+        ev_result = self.ev_adaptive_default
+
+        for i in range(10):
+            x_adjusted = Filters.adjust_ev_adaptive(x, ev_result, self.kernel_size)
+
+            lum     = x_adjusted.mean(axis=0)       
+            count   = lum.shape[0]
+
+            over_exposed  = (lum > (1.0 - 3*threshold)).sum()/count
+            under_exposed = (lum < threshold).sum()/count
+
+
+            ev_result += 0.5*(-over_exposed + under_exposed)   
+
+            ev_result = float(numpy.clip(ev_result, self.ev_min, self.ev_max))
+
+            print("optimizing adaptive ev to ", i, round(ev_result, 3))
+
+        return x_adjusted, ev_result
+     
+    def auto_adjust_white_balance(self, x):
+        x_adjusted = x.copy()
+
+        wb_result = self.wb_default
+
+        for i in range(10):
+            x_adjusted = Filters.adjust_white_balance(x, wb_result)
+            histogram = self._compute_histogram(x_adjusted)
+            
+            mean_r = numpy.sum(histogram[1] * numpy.arange(256)/256.0)
+            mean_g = numpy.sum(histogram[2] * numpy.arange(256)/256.0)
+            mean_b = numpy.sum(histogram[3] * numpy.arange(256)/256.0)
+
+
+            # The overall mean intensity of the image
+            mean_intensity = (mean_r + mean_g + mean_b) / 3
+            
+            # Compute the imbalance in the RGB channels
+            imbalance_r = mean_r - mean_intensity
+            imbalance_g = mean_g - mean_intensity
+            imbalance_b = mean_b - mean_intensity
+
+            temperature_shift_r = 800   # Kelvin per unit imbalance
+            temperature_shift_g = 100   # Kelvin per unit imbalance
+            temperature_shift_b = 1000  # Kelvin per unit imbalance
+    
+            # Compute the temperature offset based on the imbalance
+            wb_offset = (imbalance_r * temperature_shift_r + imbalance_g * temperature_shift_g + imbalance_b * temperature_shift_b)
+    
+
+            wb_result+= wb_offset
+            wb_result = float(numpy.clip(wb_result, self.wb_min, self.wb_max))
+
+            print(imbalance_r, imbalance_g, imbalance_b)
+            print("optimizing adaptive wb to ", i, round(wb_result, 3))
+     
+        return x_adjusted, wb_result
 
     def ai_assistant(self):
         print("core AI")
+
+        x_adjusted = self.image_orig_small.copy()
+        x_adjusted, self.ev_curr          = self.auto_adjust_ev(x_adjusted)
+        x_adjusted, self.ev_adaptive_curr = self.auto_adjust_adaptive_ev(x_adjusted)
+        x_adjusted, self.wb_curr          = self.auto_adjust_white_balance(x_adjusted)
+
+
+        self.settings_changed_callback()
