@@ -9,6 +9,6 @@ simple photo editing tool
 - time lapse export
 
 
-![image](images/filters_1.png)
-![image](images/filters_2.png)
-![image](images/stacking.png)
+![image](images/img_1.png)
+![image](images/img_2.png)
+![image](images/img_3.png)
