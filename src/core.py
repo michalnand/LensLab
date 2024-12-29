@@ -314,6 +314,12 @@ class Core(ImageSettings):
 
         if self.wb_curr != self.wb_default:
             x = Filters.adjust_white_balance(x, self.wb_curr)
+
+        if self.clarity_curr != self.clarity_default:
+            x = Filters.adjust_clarity(x, self.clarity_curr)
+
+        if self.dehaze_curr != self.dehaze_default:
+            x = Filters.adjust_dehaze(x, self.dehaze_curr)
         
         if self.brightness_curr != self.brightness_default:
             x = Filters.global_brightness(x, self.brightness_curr)
@@ -321,9 +327,6 @@ class Core(ImageSettings):
         if self.contrast_curr != self.contrast_default:
             x = Filters.global_contrast(x, self.contrast_curr)
 
-        
-        if self.clarity_curr != self.clarity_default:
-            x = Filters.adjust_clarity(x, self.clarity_curr)
 
         if self.saturation_curr != self.saturation_default:
             x = Filters.global_saturation(x, self.saturation_curr)

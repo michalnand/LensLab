@@ -145,6 +145,27 @@ def adjust_white_balance(x, temperature = 6500):
 
 
 
+def adjust_clarity(image, strength, kernel_size = 11):
+    # Convert to grayscale for detail emphasis
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+    # Create a high-pass filter using a Gaussian blur
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    high_pass = gray - blurred  # Extract details
+    high_pass = numpy.expand_dims(high_pass, 2)
+    
+    # Add weighted detail back into the original image
+    enhanced = image + strength*high_pass
+
+    return numpy.clip(enhanced, 0.0, 1.0, dtype=numpy.float32)
+
+
+
+def adjust_dehaze(image, strength, kernel_size = 11):
+    return 1.0 - image
+    
+
+
 def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
     # define tone ranges
     dark_mask = image < 0.33
@@ -238,18 +259,3 @@ def bilateral_filter(image, strength, diameter=9, sigma_color=75, sigma_space=75
 
 
 
-
-
-def adjust_clarity(image, strength, kernel_size = 11):
-    # Convert to grayscale for detail emphasis
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    
-    # Create a high-pass filter using a Gaussian blur
-    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
-    high_pass = gray - blurred  # Extract details
-    high_pass = numpy.expand_dims(high_pass, 2)
-    
-    # Add weighted detail back into the original image
-    enhanced = image + strength*high_pass
-
-    return numpy.clip(enhanced, 0.0, 1.0, dtype=numpy.float32)

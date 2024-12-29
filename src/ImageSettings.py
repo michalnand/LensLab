@@ -24,6 +24,18 @@ class ImageSettings:
         self.wb_curr    = self.wb_default
 
 
+        self.clarity_min        = 0.0
+        self.clarity_max        = 2.0
+        self.clarity_default    = 0.0
+        self.clarity_curr       = self.clarity_default
+
+
+        self.dehaze_min         = 0.0
+        self.dehaze_max         = 1.0
+        self.dehaze_default     = 0.0
+        self.dehaze_curr        = self.dehaze_default
+
+
         self.brightness_min     = -1.0
         self.brightness_max     = 1.0
         self.brightness_default = 0.0
@@ -36,10 +48,7 @@ class ImageSettings:
         self.contrast_curr      = self.contrast_default
 
 
-        self.clarity_min        = 0.0
-        self.clarity_max        = 2.0
-        self.clarity_default    = 0.0
-        self.clarity_curr       = self.clarity_default
+      
      
 
         self.saturation_min       = 0.0
@@ -134,6 +143,19 @@ class ImageSettings:
         result["wb"]["default"] = self.wb_default
         result["wb"]["curr"]    = self.wb_curr
 
+        result["clarity"] = {}
+        result["clarity"]["min"]        = self.clarity_min
+        result["clarity"]["max"]        = self.clarity_max
+        result["clarity"]["default"]    = self.clarity_default
+        result["clarity"]["curr"]       = self.clarity_curr
+
+        result["dehaze"] = {}
+        result["dehaze"]["min"]         = self.dehaze_min
+        result["dehaze"]["max"]         = self.dehaze_max
+        result["dehaze"]["default"]     = self.dehaze_default
+        result["dehaze"]["curr"]        = self.dehaze_curr
+
+
         result["brightness"] = {}
         result["brightness"]["min"]     = self.brightness_min
         result["brightness"]["max"]     = self.brightness_max
@@ -146,11 +168,7 @@ class ImageSettings:
         result["contrast"]["default"]   = self.contrast_default
         result["contrast"]["curr"]      = self.contrast_curr
 
-        result["clarity"] = {}
-        result["clarity"]["min"]        = self.clarity_min
-        result["clarity"]["max"]        = self.clarity_max
-        result["clarity"]["default"]    = self.clarity_default
-        result["clarity"]["curr"]       = self.clarity_curr
+       
                
         result["saturation"] = {}
         result["saturation"]["min"]     = self.saturation_min
@@ -251,6 +269,20 @@ class ImageSettings:
                 self.wb_default = result["wb"]["default"]
                 self.wb_curr    = result["wb"]["curr"]
 
+            if "clarity" in result:
+                self.clarity_min     = result["clarity"]["min"]
+                self.clarity_max     = result["clarity"]["max"]
+                self.clarity_default = result["clarity"]["default"]
+                self.clarity_curr    = result["clarity"]["curr"]
+
+            if "dehaze" in result:
+                self.dehaze_min       = result["dehaze"]["min"]
+                self.dehaze_max       = result["dehaze"]["max"]
+                self.dehaze_default   = result["dehaze"]["default"]
+                self.dehaze_curr      = result["dehaze"]["curr"]
+
+
+
             if "brightness" in result:
                 self.brightness_min     = result["brightness"]["min"]
                 self.brightness_max     = result["brightness"]["max"]
@@ -263,11 +295,9 @@ class ImageSettings:
                 self.contrast_default   = result["contrast"]["default"]
                 self.contrast_curr      = result["contrast"]["curr"]
 
-            if "clarity" in result:
-                self.clarity_min     = result["clarity"]["min"]
-                self.clarity_max     = result["clarity"]["max"]
-                self.clarity_default = result["clarity"]["default"]
-                self.clarity_curr    = result["clarity"]["curr"]
+            
+
+            
 
             if "saturation" in result:
                 self.saturation_min     = result["saturation"]["min"]
@@ -361,6 +391,23 @@ class ImageSettings:
         self.settings_changed_callback()
 
 
+    
+    def get_clarity_state(self):
+        return self.clarity_min, self.clarity_max, self.clarity_default, self.clarity_curr
+ 
+    def set_clarity(self, value):
+        self.clarity_curr = value
+        self.settings_changed_callback()
+
+
+    def get_dehaze_state(self):
+        return self.dehaze_min, self.dehaze_max, self.dehaze_default, self.dehaze_curr
+ 
+    def set_dehaze(self, value):
+        self.dehaze_curr = value
+        self.settings_changed_callback()
+
+
 
     def get_brightness_state(self):
         return self.brightness_min, self.brightness_max, self.brightness_default, self.brightness_curr
@@ -377,12 +424,7 @@ class ImageSettings:
         self.settings_changed_callback()
 
 
-    def get_clarity_state(self):
-        return self.clarity_min, self.clarity_max, self.clarity_default, self.clarity_curr
- 
-    def set_clarity(self, value):
-        self.clarity_curr = value
-        self.settings_changed_callback()
+    
 
 
     def get_saturation_state(self):

@@ -188,6 +188,67 @@ class Tools(QWidget):
         wb_reset_button.clicked.connect(lambda : self.on_wb_reset(wb_slider, wb_label))
 
 
+        #
+        # clarity options
+        #
+        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
+
+        clarity_layout = QHBoxLayout()
+
+        # label
+        clarity_label = QLabel("Clarity " + str(round(clarity_curr, 2)))
+        self.tool_options_layout.addWidget(clarity_label)
+
+        # slider
+        clarity_slider = QSlider(Qt.Horizontal)
+        clarity_slider.setRange(int(self.n_steps*clarity_min), int(self.n_steps*clarity_max))
+        clarity_slider.setValue(int(self.n_steps*clarity_curr))
+        clarity_layout.addWidget(clarity_slider)
+
+        # button
+        clarity_reset_button = QPushButton("X")
+        clarity_reset_button.setFixedSize(30, 30)
+        clarity_layout.addWidget(clarity_reset_button)
+       
+        self.tool_options_layout.addLayout(clarity_layout)
+
+        # callbacks
+        clarity_slider.valueChanged.connect(lambda : self.on_clarity_change(clarity_slider, clarity_label))
+        clarity_reset_button.clicked.connect(lambda : self.on_clarity_reset(clarity_slider, clarity_label))
+
+
+
+
+        #
+        # dehaze options
+        #
+        dehaze_min, dehaze_max, dehaze_default, dehaze_curr = self.core.get_dehaze_state()
+
+        dehaze_layout = QHBoxLayout()
+
+        # label
+        dehaze_label = QLabel("Dehaze " + str(round(dehaze_curr, 2)))
+        self.tool_options_layout.addWidget(dehaze_label)
+
+        # slider
+        dehaze_slider = QSlider(Qt.Horizontal)
+        dehaze_slider.setRange(int(self.n_steps*dehaze_min), int(self.n_steps*dehaze_max))
+        dehaze_slider.setValue(int(self.n_steps*dehaze_curr))
+        dehaze_layout.addWidget(dehaze_slider)
+
+        # button
+        dehaze_reset_button = QPushButton("X")
+        dehaze_reset_button.setFixedSize(30, 30)
+        dehaze_layout.addWidget(dehaze_reset_button)
+       
+        self.tool_options_layout.addLayout(dehaze_layout)
+
+        # callbacks
+        dehaze_slider.valueChanged.connect(lambda : self.on_dehaze_change(dehaze_slider, dehaze_label))
+        dehaze_reset_button.clicked.connect(lambda : self.on_dehaze_reset(dehaze_slider, clarity_label))
+
+
+
     def on_ev_change(self, slider, label):
         value = slider.value()/self.n_steps
         self.core.set_ev(value)
@@ -226,6 +287,32 @@ class Tools(QWidget):
         label.setText("White balance " + str(int(wb_curr)) + "K")
         slider.setValue(int(wb_default*self.n_steps))
 
+
+    def on_clarity_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_clarity(value)
+        label.setText("Clarity " + str(round(value, 2)))
+        
+
+    def on_clarity_reset(self, slider, label):
+        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
+        self.core.set_clarity(clarity_default)
+        label.setText("Clarity " + str(round(clarity_default, 2)))
+        slider.setValue(int(clarity_default*self.n_steps))
+
+
+    
+    def on_dehaze_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_dehaze(value)
+        label.setText("Dehaze " + str(round(value, 2)))
+        
+
+    def on_dehaze_reset(self, slider, label):
+        dehaze_min, dehaze_max, dehaze_default, dehaze_curr = self.core.get_dehaze_state()
+        self.core.set_dehaze(dehaze_default)
+        label.setText("Dehaze " + str(round(dehaze_default, 2)))
+        slider.setValue(int(dehaze_default*self.n_steps))
 
 
 
@@ -322,34 +409,6 @@ class Tools(QWidget):
         colors tool
     """
     def _create_colors_tool(self):
-        # clarity options
-        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
-
-        clarity_layout = QHBoxLayout()
-
-
-        # label
-        clarity_label = QLabel("clarity " + str(round(clarity_curr, 2)))
-        self.tool_options_layout.addWidget(clarity_label)
-
-        # slider
-        clarity_slider = QSlider(Qt.Horizontal)
-        clarity_slider.setRange(int(self.n_steps*clarity_min), int(self.n_steps*clarity_max))
-        clarity_slider.setValue(int(self.n_steps*clarity_curr))
-        clarity_layout.addWidget(clarity_slider)
-
-        # button
-        clarity_reset_button = QPushButton("X")
-        clarity_reset_button.setFixedSize(30, 30)
-        clarity_layout.addWidget(clarity_reset_button)
-       
-        self.tool_options_layout.addLayout(clarity_layout)
-
-        # callbacks
-        clarity_slider.valueChanged.connect(lambda : self.on_clarity_change(clarity_slider, clarity_label))
-        clarity_reset_button.clicked.connect(lambda : self.on_clarity_reset(clarity_slider, clarity_label))
-
-
 
         # saturation options
         saturation_min, saturation_max, saturation_default, saturation_curr = self.core.get_saturation_state()
@@ -434,18 +493,7 @@ class Tools(QWidget):
         equalisation_slider.valueChanged.connect(lambda : self.on_equalisation_change(equalisation_slider, equalisation_label))
         equalisation_reset_button.clicked.connect(lambda : self.on_equalisation_reset(equalisation_slider, equalisation_label))
 
-    def on_clarity_change(self, slider, label):
-        value = slider.value()/self.n_steps
-        self.core.set_clarity(value)
-        label.setText("Clarity " + str(round(value, 2)))
-        
-
-    def on_clarity_reset(self, slider, label):
-        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
-        self.core.set_clarity(clarity_default)
-        label.setText("Clarity " + str(round(clarity_default, 2)))
-        slider.setValue(int(clarity_default*self.n_steps))
-
+  
 
     def on_saturation_change(self, slider, label):
         value = slider.value()/self.n_steps
