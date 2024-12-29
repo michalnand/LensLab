@@ -188,7 +188,7 @@ def adjust_dehaze(image, strength, kernel_size = 11):
 '''
 
 
-'''
+
 def adjust_dehaze(image, strength, kernel_size = 11):
     # Compute the dark channel
     dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
@@ -213,10 +213,8 @@ def adjust_dehaze(image, strength, kernel_size = 11):
     transmission = transmission[:, :, numpy.newaxis]
     dehazed = (image - atmospheric_light) / transmission + atmospheric_light
     return numpy.clip(dehazed, 0.0, 1.0)
+
 '''
-
-
-
 def guided_filter(I, p, kernel_size):
     mean_I  = cv2.boxFilter(I, cv2.CV_32F, (kernel_size, kernel_size))
     mean_p  = cv2.boxFilter(p, cv2.CV_32F, (kernel_size, kernel_size))
@@ -260,7 +258,7 @@ def adjust_dehaze(image, strength, kernel_size = 11):
     transmission = numpy.expand_dims(transmission, 2)
     dehazed = (image - atmospheric_light) / transmission + atmospheric_light
     return numpy.clip(dehazed, 0.0, 1.0, dtype=numpy.float32)
-
+'''
 
 
 
