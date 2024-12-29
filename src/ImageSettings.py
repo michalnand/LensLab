@@ -12,6 +12,11 @@ class ImageSettings:
         self.ev_default = 0.0
         self.ev_curr    = self.ev_default
 
+        self.ev_adaptive_min     = -1.0
+        self.ev_adaptive_max     = 1.0
+        self.ev_adaptive_default = 0.0
+        self.ev_adaptive_curr    = self.ev_adaptive_default
+        
 
         self.wb_min     = 2000.0
         self.wb_max     = 20000.0
@@ -30,6 +35,12 @@ class ImageSettings:
         self.contrast_default   = 1.0
         self.contrast_curr      = self.contrast_default
 
+
+        self.clarity_min        = 0.0
+        self.clarity_max        = 2.0
+        self.clarity_default    = 0.0
+        self.clarity_curr       = self.clarity_default
+     
 
         self.saturation_min       = 0.0
         self.saturation_max       = 4.0
@@ -109,6 +120,14 @@ class ImageSettings:
         result["ev"]["default"] = self.ev_default
         result["ev"]["curr"]    = self.ev_curr
 
+
+        result["ev_adaptive"] = {}
+        result["ev_adaptive"]["min"]     = self.ev_adaptive_min
+        result["ev_adaptive"]["max"]     = self.ev_adaptive_max
+        result["ev_adaptive"]["default"] = self.ev_adaptive_default
+        result["ev_adaptive"]["curr"]    = self.ev_adaptive_curr
+
+
         result["wb"] = {}
         result["wb"]["min"]     = self.wb_min
         result["wb"]["max"]     = self.wb_max
@@ -122,11 +141,17 @@ class ImageSettings:
         result["brightness"]["curr"]    = self.brightness_curr
 
         result["contrast"] = {}
-        result["contrast"]["min"]     = self.contrast_min
-        result["contrast"]["max"]     = self.contrast_max
-        result["contrast"]["default"] = self.contrast_default
-        result["contrast"]["curr"]    = self.contrast_curr
+        result["contrast"]["min"]       = self.contrast_min
+        result["contrast"]["max"]       = self.contrast_max
+        result["contrast"]["default"]   = self.contrast_default
+        result["contrast"]["curr"]      = self.contrast_curr
 
+        result["clarity"] = {}
+        result["clarity"]["min"]        = self.clarity_min
+        result["clarity"]["max"]        = self.clarity_max
+        result["clarity"]["default"]    = self.clarity_default
+        result["clarity"]["curr"]       = self.clarity_curr
+               
         result["saturation"] = {}
         result["saturation"]["min"]     = self.saturation_min
         result["saturation"]["max"]     = self.saturation_max
@@ -214,6 +239,12 @@ class ImageSettings:
                 self.ev_default = result["ev"]["default"]
                 self.ev_curr    = result["ev"]["curr"]
 
+            if "ev_adaptive" in result:
+                self.ev_adaptive_min     = result["ev_adaptive"]["min"]
+                self.ev_adaptive_max     = result["ev_adaptive"]["max"]
+                self.ev_adaptive_default = result["ev_adaptive"]["default"]
+                self.ev_adaptive_curr    = result["ev_adaptive"]["curr"]
+
             if "wb" in result:
                 self.wb_min     = result["wb"]["min"]
                 self.wb_max     = result["wb"]["max"]
@@ -231,6 +262,12 @@ class ImageSettings:
                 self.contrast_max       = result["contrast"]["max"]
                 self.contrast_default   = result["contrast"]["default"]
                 self.contrast_curr      = result["contrast"]["curr"]
+
+            if "clarity" in result:
+                self.clarity_min     = result["clarity"]["min"]
+                self.clarity_max     = result["clarity"]["max"]
+                self.clarity_default = result["clarity"]["default"]
+                self.clarity_curr    = result["clarity"]["curr"]
 
             if "saturation" in result:
                 self.saturation_min     = result["saturation"]["min"]
@@ -307,6 +344,14 @@ class ImageSettings:
         self.ev_curr = value
         self.settings_changed_callback()
 
+    
+    def get_ev_adaptive_state(self):
+        return self.ev_adaptive_min, self.ev_adaptive_max, self.ev_adaptive_default, self.ev_adaptive_curr
+
+    def set_ev_adaptive(self, value):
+        self.ev_adaptive_curr = value
+        self.settings_changed_callback()
+
 
     def get_wb_state(self):
         return self.wb_min, self.wb_max, self.wb_default, self.wb_curr
@@ -329,6 +374,14 @@ class ImageSettings:
  
     def set_contrast(self, value):
         self.contrast_curr = value
+        self.settings_changed_callback()
+
+
+    def get_clarity_state(self):
+        return self.clarity_min, self.clarity_max, self.clarity_default, self.clarity_curr
+ 
+    def set_clarity(self, value):
+        self.clarity_curr = value
         self.settings_changed_callback()
 
 

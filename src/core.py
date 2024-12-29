@@ -309,6 +309,9 @@ class Core(ImageSettings):
         if self.ev_curr != self.ev_default:
             x = Filters.adjust_ev(x, self.ev_curr)
 
+        if self.ev_adaptive_curr != self.ev_adaptive_default:
+            x = Filters.adjust_ev_adaptive(x, self.ev_adaptive_curr)
+
         if self.wb_curr != self.wb_default:
             x = Filters.adjust_white_balance(x, self.wb_curr)
         
@@ -318,11 +321,16 @@ class Core(ImageSettings):
         if self.contrast_curr != self.contrast_default:
             x = Filters.global_contrast(x, self.contrast_curr)
 
+        
+        if self.clarity_curr != self.clarity_default:
+            x = Filters.adjust_clarity(x, self.clarity_curr)
+
         if self.saturation_curr != self.saturation_default:
             x = Filters.global_saturation(x, self.saturation_curr)
 
         if self.vibrance_curr != self.vibrance_default:
             x = Filters.local_saturation(x, self.vibrance_curr)
+            
 
         x = numpy.clip(x, 0.0, 1.0)
 

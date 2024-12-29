@@ -20,6 +20,24 @@ def adjust_ev(x, ev_change):
     result = x * ev_factor
     return result
 
+
+def adjust_ev_adaptive(x, ev_change, kernel_size = 11):
+    luminance = numpy.dot(x, [float(0.299), float(0.587),float(0.114)])[..., numpy.newaxis]
+    luminance_mean  = luminance.mean()
+    luminance_local = cv2.GaussianBlur(luminance, (kernel_size, kernel_size), 0)
+
+
+    d = (luminance_local - luminance_mean)/(luminance_mean + 1e-6)
+    d = numpy.clip(d, 0.0, 1.0)
+
+    d = numpy.expand_dims(d, 2)
+
+    ev_change_tmp = ev_change*d
+    result = adjust_ev(x, ev_change_tmp)
+
+    return result.astype(numpy.float32)
+
+
 def adjust_red(x, level):
     result = x.copy()
     result[:, :, 2]*= level
@@ -217,3 +235,21 @@ def bilateral_filter(image, strength, diameter=9, sigma_color=75, sigma_space=75
     result  = blurred*strength + (1.0 - strength)*image
 
     return result
+
+
+
+
+
+def adjust_clarity(image, strength, kernel_size = 11):
+    # Convert to grayscale for detail emphasis
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+    # Create a high-pass filter using a Gaussian blur
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    high_pass = gray - blurred  # Extract details
+    high_pass = numpy.expand_dims(high_pass, 2)
+    
+    # Add weighted detail back into the original image
+    enhanced = image + strength*high_pass
+
+    return numpy.clip(enhanced, 0.0, 1.0, dtype=numpy.float32)

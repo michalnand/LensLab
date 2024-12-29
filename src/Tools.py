@@ -130,6 +130,35 @@ class Tools(QWidget):
 
 
 
+        # adaptive exposure options
+        ev_adaptive_min, ev_adaptive_max, ev_adaptive_default, ev_adaptive_curr = self.core.get_ev_adaptive_state()
+
+        ev_adaptive_layout = QHBoxLayout()
+
+        # label
+        ev_adaptive_label = QLabel("Adaptive Exposure " + str(round(ev_adaptive_curr, 2)))
+        self.tool_options_layout.addWidget(ev_adaptive_label)
+
+        # slider
+        ev_adaptive_slider = QSlider(Qt.Horizontal)
+        ev_adaptive_slider.setRange(int(self.n_steps*ev_adaptive_min), int(self.n_steps*ev_adaptive_max))
+        ev_adaptive_slider.setValue(int(self.n_steps*ev_adaptive_curr))
+        ev_adaptive_layout.addWidget(ev_adaptive_slider)
+
+        # button
+        ev_adaptive_reset_button = QPushButton("X")
+        ev_adaptive_reset_button.setFixedSize(30, 30)
+        ev_adaptive_layout.addWidget(ev_adaptive_reset_button)
+       
+        self.tool_options_layout.addLayout(ev_adaptive_layout)
+
+        # callbacks
+        ev_adaptive_slider.valueChanged.connect(lambda : self.on_ev_adaptive_change(ev_adaptive_slider, ev_adaptive_label))
+        ev_adaptive_reset_button.clicked.connect(lambda : self.on_ev_adaptive_reset(ev_adaptive_slider, ev_adaptive_label))
+
+
+
+
         #
         # Temperature options
         #
@@ -170,6 +199,20 @@ class Tools(QWidget):
         self.core.set_ev(ev_default)
         label.setText("Exposure " + str(round(ev_default, 2)))
         slider.setValue(int(ev_default*self.n_steps))
+
+
+    def on_ev_adaptive_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_ev_adaptive(value)
+        label.setText("Adaptive Exposure " + str(round(value, 2)))
+        
+
+    def on_ev_adaptive_reset(self, slider, label):
+        ev_adaptive_min, ev_adaptive_max, ev_adaptive_default, ev_adaptive_curr = self.core.get_ev_adaptive_state()
+        self.core.set_ev(ev_adaptive_default)
+        label.setText("Adaptive Exposure " + str(round(ev_adaptive_default, 2)))
+        slider.setValue(int(ev_adaptive_default*self.n_steps))
+
 
     def on_wb_change(self, slider, label):
         value = slider.value()/self.n_steps
@@ -279,10 +322,40 @@ class Tools(QWidget):
         colors tool
     """
     def _create_colors_tool(self):
+        # clarity options
+        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
+
+        clarity_layout = QHBoxLayout()
+
+
+        # label
+        clarity_label = QLabel("clarity " + str(round(clarity_curr, 2)))
+        self.tool_options_layout.addWidget(clarity_label)
+
+        # slider
+        clarity_slider = QSlider(Qt.Horizontal)
+        clarity_slider.setRange(int(self.n_steps*clarity_min), int(self.n_steps*clarity_max))
+        clarity_slider.setValue(int(self.n_steps*clarity_curr))
+        clarity_layout.addWidget(clarity_slider)
+
+        # button
+        clarity_reset_button = QPushButton("X")
+        clarity_reset_button.setFixedSize(30, 30)
+        clarity_layout.addWidget(clarity_reset_button)
+       
+        self.tool_options_layout.addLayout(clarity_layout)
+
+        # callbacks
+        clarity_slider.valueChanged.connect(lambda : self.on_clarity_change(clarity_slider, clarity_label))
+        clarity_reset_button.clicked.connect(lambda : self.on_clarity_reset(clarity_slider, clarity_label))
+
+
+
         # saturation options
         saturation_min, saturation_max, saturation_default, saturation_curr = self.core.get_saturation_state()
 
         saturation_layout = QHBoxLayout()
+
 
         # label
         saturation_label = QLabel("Saturation " + str(round(saturation_curr, 2)))
@@ -360,6 +433,19 @@ class Tools(QWidget):
         # callbacks 
         equalisation_slider.valueChanged.connect(lambda : self.on_equalisation_change(equalisation_slider, equalisation_label))
         equalisation_reset_button.clicked.connect(lambda : self.on_equalisation_reset(equalisation_slider, equalisation_label))
+
+    def on_clarity_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_clarity(value)
+        label.setText("Clarity " + str(round(value, 2)))
+        
+
+    def on_clarity_reset(self, slider, label):
+        clarity_min, clarity_max, clarity_default, clarity_curr = self.core.get_clarity_state()
+        self.core.set_clarity(clarity_default)
+        label.setText("Clarity " + str(round(clarity_default, 2)))
+        slider.setValue(int(clarity_default*self.n_steps))
+
 
     def on_saturation_change(self, slider, label):
         value = slider.value()/self.n_steps
