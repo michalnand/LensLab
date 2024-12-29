@@ -1,4 +1,4 @@
-# Len Lab
+# Lens Lab
 
 simple photo editing tool
 
