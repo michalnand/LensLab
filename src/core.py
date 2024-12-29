@@ -129,6 +129,9 @@ class Core(ImageSettings):
         self.image_curr = self._update(self.image_orig_small, self.kernel_size)
         self.histogram  = self.get_histogram(self.image_curr)
 
+        # viewer compensation
+        self.image_curr = Filters.global_saturation(self.image_curr, float(0.85))
+
         if self.split_preview:
             self.image_curr = self._split_preview(self.image_orig_small, self.image_curr)
 

@@ -161,7 +161,7 @@ class PhotoView(QWidget):
         view_width = self.photo_view.width()
         view_height = self.photo_view.height()
 
-        scaled_pixmap = pixmap.scaled(view_width, view_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        scaled_pixmap = pixmap.scaled(view_width, view_height, Qt.KeepAspectRatio, Qt.FastTransformation)
         padded_image = QImage(view_width, view_height, QImage.Format_ARGB32)
         padded_image.fill(Qt.black)  # Fill with black (or zeros)
 
