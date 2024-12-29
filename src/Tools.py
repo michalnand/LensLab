@@ -51,6 +51,13 @@ class Tools(QWidget):
         self.tool_options_container.setLayout(self.tool_options_layout)
         self.main_layout.addWidget(self.tool_options_container, stretch=2)
 
+
+        # AI  Assistant button
+        ai_assistant_button = QPushButton("AI Assistant")
+
+        self.main_layout.addWidget(ai_assistant_button)
+        ai_assistant_button.clicked.connect(self.on_ai_assistant_click)
+        
         
         # split preview button
         split_preview_button = QPushButton("Split Preview")
@@ -87,6 +94,10 @@ class Tools(QWidget):
             self._create_empty_tool()
 
         self.tool_options_layout.addStretch()
+
+    def on_ai_assistant_click(self):
+        print("on_ai_assistant_click")
+        self.core.ai_assistant()
 
     def on_split_preview_click(self):
         print("on_split_preview_click")
@@ -245,7 +256,7 @@ class Tools(QWidget):
 
         # callbacks
         dehaze_slider.valueChanged.connect(lambda : self.on_dehaze_change(dehaze_slider, dehaze_label))
-        dehaze_reset_button.clicked.connect(lambda : self.on_dehaze_reset(dehaze_slider, clarity_label))
+        dehaze_reset_button.clicked.connect(lambda : self.on_dehaze_reset(dehaze_slider, dehaze_label))
 
 
 

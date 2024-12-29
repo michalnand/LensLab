@@ -430,3 +430,7 @@ class Core(ImageSettings):
         rect_bottom  = int(round(numpy.clip(rect_bottom, 0, height)))
 
         return rect_left, rect_right, rect_top, rect_bottom
+    
+
+    def ai_assistant(self):
+        print("core AI")

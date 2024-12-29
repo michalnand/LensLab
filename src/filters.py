@@ -160,10 +160,109 @@ def adjust_clarity(image, strength, kernel_size = 11):
     return numpy.clip(enhanced, 0.0, 1.0, dtype=numpy.float32)
 
 
+'''
+def adjust_dehaze(image, strength, kernel_size = 11):
+    # Compute the dark channel
+    dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
+    dark_channel = cv2.erode(dark_channel, numpy.ones((kernel_size, kernel_size)))  # Local minima for haze
+    
+    # Softly estimate atmospheric light (weighted average of top dark channel pixels)
+    flat_image = image.reshape(-1, 3)
+    flat_dark = dark_channel.ravel()
+    
+    # Weighting mechanism: softmax of dark channel values
+    top_percent = int(0.001 * len(flat_dark))  # Consider the top 0.1% darkest pixels
+    weights = numpy.exp(flat_dark / 0.1)  # Exponential weights to emphasize brighter pixels
+    weights /= weights.sum()  # Normalize weights
+    
+    atmospheric_light = numpy.dot(flat_image.T, weights).reshape(-1)  # Weighted sum
+    
+    # Estimate transmission map
+    transmission = 1 - strength * (dark_channel / atmospheric_light.max())
+    transmission = numpy.clip(transmission, 0.1, 1)  # Avoid complete blackness
+    
+    # Recover the image
+    transmission = transmission[:, :, numpy.newaxis]
+    dehazed = (image - atmospheric_light) / transmission + atmospheric_light
+    return numpy.clip(dehazed, 0.0, 1.0)
+'''
+
+
+'''
+def adjust_dehaze(image, strength, kernel_size = 11):
+    # Compute the dark channel
+    dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
+    
+    dark_channel = cv2.GaussianBlur(dark_channel, (kernel_size, kernel_size), 0)  # Local minima for haze
+    
+    # Softly estimate atmospheric light (weighted average of top dark channel pixels)
+    flat_image = image.reshape(-1, 3)
+    flat_dark = dark_channel.ravel()
+    
+    # Weighting mechanism: softmax of dark channel values
+    weights = numpy.exp(flat_dark / 0.1)  # Exponential weights to emphasize brighter pixels
+    weights /= weights.sum()  # Normalize weights
+    
+    atmospheric_light = numpy.dot(flat_image.T, weights).reshape(-1)  # Weighted sum
+    
+    # Estimate transmission map
+    transmission = 1 - strength * (dark_channel / atmospheric_light.max())
+    transmission = numpy.clip(transmission, 0.1, 1)  # Avoid complete blackness
+    
+    # Recover the image
+    transmission = transmission[:, :, numpy.newaxis]
+    dehazed = (image - atmospheric_light) / transmission + atmospheric_light
+    return numpy.clip(dehazed, 0.0, 1.0)
+'''
+
+
+
+def guided_filter(I, p, kernel_size):
+    mean_I  = cv2.boxFilter(I, cv2.CV_32F, (kernel_size, kernel_size))
+    mean_p  = cv2.boxFilter(p, cv2.CV_32F, (kernel_size, kernel_size))
+    mean_Ip = cv2.boxFilter(I * p, cv2.CV_32F, (kernel_size, kernel_size))
+
+
+    cov_Ip = mean_Ip - mean_I * mean_p
+
+    mean_II = cv2.boxFilter(I * I, cv2.CV_32F, (kernel_size, kernel_size))
+    var_I = mean_II - mean_I * mean_I
+
+    a = cov_Ip / (var_I + 1e-6)
+    b = mean_p - a * mean_I
+
+    mean_a = cv2.boxFilter(a, cv2.CV_32F, (kernel_size, kernel_size))
+    mean_b = cv2.boxFilter(b, cv2.CV_32F, (kernel_size, kernel_size))
+
+    return mean_a * I + mean_b
 
 def adjust_dehaze(image, strength, kernel_size = 11):
-    return 1.0 - image
+    # Compute the dark channel
+    # Minimum across R, G, B channels
+    dark_channel = numpy.min(image, axis=2)  
     
+    # Apply guided filter for smoother, edge-aware dark channel
+    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    dark_channel = guided_filter(gray_image, dark_channel, kernel_size)
+    
+    # Atmospheric light estimation (same as original)
+    flat_image = image.reshape(-1, 3)
+    flat_dark = dark_channel.ravel()
+    weights = numpy.exp(flat_dark / 0.1)
+    weights /= weights.sum()
+    atmospheric_light = numpy.dot(flat_image.T, weights).reshape(-1)
+    
+    # Transmission map estimation
+    transmission = 1 - strength * (dark_channel / atmospheric_light.max())
+    transmission = numpy.clip(transmission, 0.1, 1)
+    
+    # Recover the image
+    transmission = numpy.expand_dims(transmission, 2)
+    dehazed = (image - atmospheric_light) / transmission + atmospheric_light
+    return numpy.clip(dehazed, 0.0, 1.0, dtype=numpy.float32)
+
+
+
 
 
 def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
