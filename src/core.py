@@ -181,14 +181,20 @@ class Core(ImageSettings):
 
         self.crop_x = 0.5
         self.crop_y = 0.5
+
+        # load default settings
+        self.set_default()
         
+        # load actual settings if exists
         path, file_name = self._split_file_name(self.current_idx)
         self.load_settings(path + "/" + file_name + ".json")
 
-
+        # update image
         self.update_process()
 
+        # update gui
         self.stacking_instance.update_range()
+        self.tools_instance.update()
 
 
         

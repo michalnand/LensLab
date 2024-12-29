@@ -70,25 +70,31 @@ class Tools(QWidget):
 
     def get(self):
         return self.main_widget
+    
+    def update(self):
+        print("tools udpate")
+        self._on_tool_selected("Exposure")
 
     def on_tool_selected(self, current, previous):
+        tool_name = current.text()
+        self._on_tool_selected(tool_name)
+
+    def _on_tool_selected(self, tool_name):
         print("on_tool_selected")
         
         self._clear_layout(self.tool_options_layout)
 
-
-
-        if current.text() == "Exposure":
+        if tool_name == "Exposure":
             self._create_exposure_tool()
-        elif current.text() == "Brightness and Contrast":
+        elif tool_name == "Brightness and Contrast":
             self._create_brightness_and_contrast_tool()
-        elif current.text() == "Colors":
+        elif tool_name == "Colors":
             self._create_colors_tool()
-        elif current.text() == "Tones":
+        elif tool_name == "Tones":
             self._create_tones_tool()
-        elif current.text() == "Filters":
+        elif tool_name == "Filters":
             self._create_filter_tool()
-        elif current.text() == "Crop":
+        elif tool_name == "Crop":
             self._create_crop_tool()
         else:
             self._create_empty_tool()
