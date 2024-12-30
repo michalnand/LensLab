@@ -71,11 +71,7 @@ class Core(ImageSettings):
     
     def get_histogram(self, image):
 
-        histogram = self._compute_histogram(image)
-
-
-
-
+        histogram = self._compute_histogram(image, False)
 
         # histogram smoothing
         window_size = 9
@@ -243,6 +239,7 @@ class Core(ImageSettings):
 
         result = result[crop_top:crop_bottom, crop_left:crop_right, :]
 
+        result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
         result = numpy.array(result*255, dtype=numpy.uint8)
         if extension == "jpg":
             cv2.imwrite(file_name, result, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
@@ -285,6 +282,7 @@ class Core(ImageSettings):
                 writer = cv2.VideoWriter(file_name, fourcc, fps, (width, height))
 
             if result.shape[0] == height and result.shape[1] == width:
+                result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
                 result = numpy.clip(255*result, 0, 255).astype(numpy.uint8)
                 writer.write(result)
 
@@ -340,6 +338,7 @@ class Core(ImageSettings):
 
         x = numpy.clip(x, 0.0, 1.0)
 
+        x = Filters.adjust_black_white_points(x, self.point_black_curr, self.point_white_curr)
         x = Filters.adjust_tones(x, self.tones_dark_curr, self.tones_mid_curr, self.tones_high_curr)
         x = numpy.clip(x, 0.0, 1.0)
 
@@ -434,7 +433,7 @@ class Core(ImageSettings):
 
         return rect_left, rect_right, rect_top, rect_bottom
     
-    def _compute_histogram(self, x):
+    def _compute_histogram(self, x, normalise):
         tmp = numpy.array(x*255, dtype=numpy.uint8)
         hist_size = 256
         histogram = numpy.zeros((4, hist_size))
@@ -444,12 +443,18 @@ class Core(ImageSettings):
         b = cv2.calcHist([tmp], [2], None, [hist_size], [0, 256])[:, 0]
 
         w = r + g + b
-            
-        histogram[0] = w/(w.sum() + 1e-6)   
-        histogram[1] = r/(r.sum() + 1e-6)
-        histogram[2] = g/(g.sum() + 1e-6)
-        histogram[3] = b/(b.sum() + 1e-6)
-
+        
+        if normalise:
+            histogram[0] = w/(w.sum() + 1e-6)   
+            histogram[1] = r/(r.sum() + 1e-6)
+            histogram[2] = g/(g.sum() + 1e-6)
+            histogram[3] = b/(b.sum() + 1e-6)
+        else:
+            histogram[0] = (w - w.min()) / (w.max() - w.min() + 1e-6)
+            histogram[1] = (r - r.min()) / (r.max() - r.min() + 1e-6)
+            histogram[2] = (g - g.min()) / (g.max() - g.min() + 1e-6)
+            histogram[3] = (b - b.min()) / (b.max() - b.min() + 1e-6)
+        
         return histogram
     
     def auto_adjust_ev(self, x, threshold = 0.1):
@@ -502,7 +507,7 @@ class Core(ImageSettings):
 
         for i in range(10):
             x_adjusted = Filters.adjust_white_balance(x, wb_result)
-            histogram = self._compute_histogram(x_adjusted)
+            histogram = self._compute_histogram(x_adjusted, True)
             
             mean_r = numpy.sum(histogram[1] * numpy.arange(256)/256.0)
             mean_g = numpy.sum(histogram[2] * numpy.arange(256)/256.0)

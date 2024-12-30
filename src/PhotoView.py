@@ -189,5 +189,5 @@ class PhotoView(QWidget):
         x_tmp = numpy.array(x*255, dtype=numpy.uint8)
         height, width, channels = x_tmp.shape
         bytes_per_line = channels * width
-        qimage = QImage(x_tmp.data, width, height, bytes_per_line, QImage.Format_BGR888)
+        qimage = QImage(x_tmp.data, width, height, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(qimage)    

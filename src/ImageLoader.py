@@ -50,6 +50,7 @@ class ImageLoader:
         
     def _load(self, idx):
         x = cv2.imread(self.files_list[idx])
+        x = cv2.cvtColor(x, cv2.COLOR_BGR2RGB)
         x = numpy.array(x/255.0, dtype=numpy.float32)
         return x
     

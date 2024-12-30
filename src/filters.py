@@ -160,35 +160,6 @@ def adjust_clarity(image, strength, kernel_size, sigma = 0.0):
     return numpy.clip(enhanced, 0.0, 1.0, dtype=numpy.float32)
 
 
-'''
-def adjust_dehaze(image, strength, kernel_size):
-    # Compute the dark channel
-    dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
-    dark_channel = cv2.erode(dark_channel, numpy.ones((kernel_size, kernel_size)))  # Local minima for haze
-    
-    # Softly estimate atmospheric light (weighted average of top dark channel pixels)
-    flat_image = image.reshape(-1, 3)
-    flat_dark = dark_channel.ravel()
-    
-    # Weighting mechanism: softmax of dark channel values
-    top_percent = int(0.001 * len(flat_dark))  # Consider the top 0.1% darkest pixels
-    weights = numpy.exp(flat_dark / 0.1)  # Exponential weights to emphasize brighter pixels
-    weights /= weights.sum()  # Normalize weights
-    
-    atmospheric_light = numpy.dot(flat_image.T, weights).reshape(-1)  # Weighted sum
-    
-    # Estimate transmission map
-    transmission = 1 - strength * (dark_channel / atmospheric_light.max())
-    transmission = numpy.clip(transmission, 0.1, 1)  # Avoid complete blackness
-    
-    # Recover the image
-    transmission = transmission[:, :, numpy.newaxis]
-    dehazed = (image - atmospheric_light) / transmission + atmospheric_light
-    return numpy.clip(dehazed, 0.0, 1.0)
-'''
-
-
-
 def adjust_dehaze(image, strength, kernel_size, sigma = 0.0):
     # Compute the dark channel
     dark_channel = numpy.min(image, axis=2)  # Minimum across R, G, B channels
@@ -217,6 +188,17 @@ def adjust_dehaze(image, strength, kernel_size, sigma = 0.0):
 
 
 
+def adjust_black_white_points(image, black_point=0.0, white_point=1.0):
+    # Ensure black_point is less than white_point
+    black_point = max(0.0, min(black_point, 1.0))
+    white_point = max(black_point, min(white_point, 1.0))
+
+    # Scale and clip the image
+    image_adjusted = (image - black_point) / (white_point - black_point)
+    image_adjusted = numpy.clip(image_adjusted, 0.0, 1.0, dtype=numpy.float32)
+
+    return image_adjusted
+
 def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
     # define tone ranges
     dark_mask = image < 0.33
@@ -231,33 +213,29 @@ def adjust_tones(image, dark_shift=0.0, mid_shift=0.0, light_shift=0.0):
     
     return adjusted_image
 
+def adjust_colors(image, red_boost, green_boost, blue_boost): 
 
+    print(red_boost, green_boost, blue_boost)
+   
+    hsv_image = cv2.cvtColor((image*255.0).astype(numpy.uint8), cv2.COLOR_RGB2HSV)    
+    h, s, v = cv2.split(hsv_image)
+    
+    red_mask    = ((h < 30) | (h > 150)).astype(numpy.float32)
+    green_mask  = ((h >= 30) & (h < 90)).astype(numpy.float32)
+    blue_mask   = ((h >= 90) & (h <= 150)).astype(numpy.float32)
+    
+    s = s.astype(numpy.float32)
+    ds = 0.0    
+    ds+= s*red_mask*red_boost
+    ds+= s*green_mask*green_boost
+    ds+= s*blue_mask*blue_boost
+    s = numpy.clip(s + ds, 0.0, 255.0).astype(numpy.uint8)
 
-def adjust_colors(image, red, green, blue): 
-    # Convert RGB (0-1 range) to HSV
-    #hsv = cv2.cvtColor((image * 255).astype(numpy.uint8), cv2.COLOR_RGB2HSV).astype(numpy.float32)
-    #h, s, v = cv2.split(hsv)
+    enhanced_hsv    = cv2.merge([h, s, v])
+    enhanced_image  = cv2.cvtColor(enhanced_hsv, cv2.COLOR_HSV2RGB).astype(numpy.float32) / 255.0
+    
+    return enhanced_image
 
-    hsv = cv2.cvtColor((image * 255.0), cv2.COLOR_RGB2HSV).astype(numpy.float32)
-    h, s, v = cv2.split(hsv)
-    
-    
-    red_adjust   = red * (h < 60).astype(float)
-    green_adjust = green * ((h >= 60) & (h < 120)).astype(float)
-    blue_adjust  = blue * (h >= 120).astype(float)
-
-    adjust = (red_adjust + green_adjust + blue_adjust)/3.0
-
-    # Apply enhancements using the mask
-    s = numpy.clip(s + adjust, 0, 255).astype(numpy.float32)
-    
-    
-    # Merge back and convert to RGB
-    enhanced_hsv = cv2.merge([h, s, v]) 
-    enhanced_image = cv2.cvtColor(enhanced_hsv, cv2.COLOR_HSV2RGB)
-    
-    # Normalize to range [0, 1]
-    return (enhanced_image / 255.0).astype(numpy.float32)
 
 
 def histogram_equalisation(image, strength):

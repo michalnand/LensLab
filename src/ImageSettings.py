@@ -73,6 +73,14 @@ class ImageSettings:
         self.blur_curr        = self.blur_default
 
 
+        self.point_min              = 0.0
+        self.point_max              = 1.0
+        self.point_black_default    = 0.0
+        self.point_white_default    = 1.0
+        self.point_black_curr       = 0.0
+        self.point_white_curr       = 1.0
+
+
         
         self.tones_min          = -0.1
         self.tones_max          = 0.1
@@ -182,6 +190,13 @@ class ImageSettings:
         result["vibrance"]["default"] = self.vibrance_default
         result["vibrance"]["curr"]    = self.vibrance_curr
 
+        result["point"] = {}
+        result["point"]["min"]             = self.point_min
+        result["point"]["max"]             = self.point_max
+        result["point"]["black_default"]   = self.point_black_default
+        result["point"]["white_default"]   = self.point_white_default
+        result["point"]["black_curr"]      = self.point_black_curr
+        result["point"]["white_curr"]      = self.point_white_curr
 
         result["tones"] = {}
         result["tones"]["min"]             = self.tones_min
@@ -310,6 +325,14 @@ class ImageSettings:
                 self.vibrance_max       = result["vibrance"]["max"]
                 self.vibrance_default   = result["vibrance"]["default"]
                 self.vibrance_curr      = result["vibrance"]["curr"]
+
+            if "point" in result:
+                self.point_min              = result["point"]["min"]
+                self.point_max              = result["point"]["max"]
+                self.point_black_default    = result["point"]["black_default"]
+                self.point_white_default    = result["point"]["white_default"]
+                self.point_black_curr       = result["point"]["black_curr"]
+                self.point_white_curr       = result["point"]["white_curr"]
 
             if "tones" in result:
                 self.tones_min          = result["tones"]["min"]
@@ -450,6 +473,17 @@ class ImageSettings:
         self.equalisation_curr = value
         self.settings_changed_callback()
 
+
+    def get_point_state(self):
+        return self.point_min, self.point_max, self.point_black_default, self.point_white_default, self.point_black_curr, self.point_white_curr
+    
+    def set_point_black(self, value):
+        self.point_black_curr = value
+        self.settings_changed_callback()
+
+    def set_point_white(self, value):
+        self.point_white_curr = value
+        self.settings_changed_callback()
 
     def get_tones_state(self):
         return self.tones_min, self.tones_max, self.tones_default, self.tones_dark_curr, self.tones_mid_curr, self.tones_high_curr

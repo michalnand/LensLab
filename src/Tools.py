@@ -45,7 +45,7 @@ class Tools(QWidget):
 
         # Tool options 
         self.tool_options_layout = QVBoxLayout()
-        self.tool_options_layout.setSpacing(5)
+        self.tool_options_layout.setSpacing(2)
 
         self.tool_options_container = QWidget()
         self.tool_options_container.setLayout(self.tool_options_layout)
@@ -556,6 +556,66 @@ class Tools(QWidget):
         tones tool
     """
     def _create_tones_tool(self):
+        # black point
+        point_min, point_max, point_black_default, point_white_default, point_black_curr, point_white_curr = self.core.get_point_state()
+        
+        # dark tones - shadows
+        point_black_layout = QHBoxLayout()
+
+        # label
+        point_black_label = QLabel("Black Point " + str(round(point_black_curr, 2)))
+        self.tool_options_layout.addWidget(point_black_label)
+
+        # slider
+        point_black_slider = QSlider(Qt.Horizontal)
+        point_black_slider.setRange(int(self.n_steps*point_min), int(self.n_steps*point_max))
+        point_black_slider.setValue(int(self.n_steps*point_black_curr))
+        point_black_layout.addWidget(point_black_slider)
+
+        # button
+        point_black_reset_button = QPushButton("X")
+        point_black_reset_button.setFixedSize(30, 30)
+        point_black_layout.addWidget(point_black_reset_button)
+       
+        self.tool_options_layout.addLayout(point_black_layout)
+
+        # callbacks
+        point_black_slider.valueChanged.connect(lambda : self.on_point_black_change(point_black_slider, point_black_label))
+        point_black_reset_button.clicked.connect(lambda : self.on_point_black_reset(point_black_slider, point_black_label))
+
+
+
+        # white point
+        point_min, point_max, point_black_default, point_white_default, point_black_curr, point_white_curr = self.core.get_point_state()
+        
+        # dark tones - shadows
+        point_white_layout = QHBoxLayout()
+
+        # label
+        point_white_label = QLabel("White Point " + str(round(point_white_curr, 2)))
+        self.tool_options_layout.addWidget(point_white_label)
+
+        # slider
+        point_white_slider = QSlider(Qt.Horizontal)
+        point_white_slider.setRange(int(self.n_steps*point_min), int(self.n_steps*point_max))
+        point_white_slider.setValue(int(self.n_steps*point_white_curr))
+        point_white_layout.addWidget(point_white_slider)
+
+        # button
+        point_white_reset_button = QPushButton("X")
+        point_white_reset_button.setFixedSize(30, 30)
+        point_white_layout.addWidget(point_white_reset_button)
+       
+        self.tool_options_layout.addLayout(point_white_layout)
+
+        # callbacks
+        point_white_slider.valueChanged.connect(lambda : self.on_point_white_change(point_white_slider, point_white_label))
+        point_white_reset_button.clicked.connect(lambda : self.on_point_white_reset(point_white_slider, point_white_label))
+
+        
+
+
+
         # tones options
         tones_min, tones_max, tones_default, tones_dark_curr, tones_mid_curr, tones_high_curr = self.core.get_tones_state()
 
@@ -721,6 +781,30 @@ class Tools(QWidget):
 
 
 
+    def on_point_black_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_point_black(value)
+        label.setText("Black Point " + str(round(value, 2)))
+
+    def on_point_black_reset(self, slider, label):
+        point_min, point_max, point_black_default, point_white_default, point_black_curr, point_white_curr = self.core.get_point_state()
+        self.core.set_point_black(point_black_default)
+        slider.setValue(int(point_black_default*self.n_steps))
+
+
+    def on_point_white_change(self, slider, label):
+        value = slider.value()/self.n_steps
+        self.core.set_point_white(value)
+        label.setText("White Point " + str(round(value, 2)))
+
+    def on_point_white_reset(self, slider, label):
+        point_min, point_max, point_black_default, point_white_default, point_black_curr, point_white_curr = self.core.get_point_state()
+        self.core.set_point_white(point_white_default)
+        slider.setValue(int(point_white_default*self.n_steps))
+
+
+    
+
 
 
     def on_tones_dark_change(self, slider, label):
@@ -731,7 +815,6 @@ class Tools(QWidget):
 
     def on_tones_dark_reset(self, slider, label):
         tones_min, tones_max, tones_default, tones_dark_curr, tones_mid_curr, tones_high_curr = self.core.get_tones_state()
-
         self.core.set_tones_dark(tones_default)
         slider.setValue(int(tones_default*self.n_steps))
 
@@ -962,10 +1045,10 @@ class Tools(QWidget):
         blue    = histogram[3]
 
         self.histogram_widget.clear()
-        self.histogram_widget.plot(all, pen=pg.mkPen("w"))
-        self.histogram_widget.plot(red, pen=pg.mkPen("r"))
-        self.histogram_widget.plot(green, pen=pg.mkPen("g"))
-        self.histogram_widget.plot(blue, pen=pg.mkPen("b"))
+        self.histogram_widget.plot(all, pen=pg.mkPen("w"), fillLevel=0, brush=(255, 255, 255, 50))
+        self.histogram_widget.plot(red, pen=pg.mkPen("r"), fillLevel=0, brush=(255, 0, 0, 50))
+        self.histogram_widget.plot(green, pen=pg.mkPen("g"), fillLevel=0, brush=(0, 255, 0, 50))
+        self.histogram_widget.plot(blue, pen=pg.mkPen("b"), fillLevel=0, brush=(0, 0, 255, 50))
 
 
     def _clear_layout(self, layout):
